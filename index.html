@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>减脂打卡｜自定义身高体重</title>
+<title>减脂打卡｜土豆+鸡胸肉食谱+食物热量计算器</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="减脂打卡">
@@ -20,35 +20,116 @@ button.gray{background:#9ca3af}
 button.green{background:#10b981}
 button.orange{background:#f97316}
 input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;font-size:16px}
+select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;font-size:16px;background:#fff}
 .check-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px}
 .progress{height:12px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin:8px 0;width:100%}
 .progress>div{height:100%;background:#3b82f6;width:0%}
 .log-item{padding:8px;border-bottom:1px solid #eee;font-size:13px;word-break:break-all}
 .tab-group{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
-canvas{width:100%;height:220px;margin-top:8px;border-radius:8px}
+canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 .countdown{background:#fef3c7;color:#92400e;padding:10px;border-radius:8px;margin:8px 0;font-weight:bold;font-size:14px}
 .set-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
 .bmi-text{color:#2563eb;font-weight:bold;margin:6px 0;font-size:14px}
+.bodyfat-text{color:#db2777;font-weight:bold;margin:6px 0;font-size:14px}
+.nutri-text{color:#222;font-size:14px;margin:4px 0;line-height:1.5}
+.recipe-box{background:#f0fdf4;padding:10px;border-radius:8px;margin-top:8px;font-size:14px;line-height:1.6}
 </style>
 </head>
 <body>
-<!-- 【这个就是你找不到的身高体重模块，在页面最顶部！】 -->
 <div class="card">
 <h2>⚙️ 基础信息（随时修改）</h2>
 <div class="set-row">
 <div>
+<label>性别</label>
+<select id="gender">
+<option value="male">男</option>
+<option value="female">女</option>
+</select>
+</div>
+<div>
 <label>身高 cm</label>
 <input type="number" id="height" placeholder="例如 175" step="1">
+</div>
+</div>
+<div class="set-row">
+<div>
+<label>颈围 cm</label>
+<input type="number" id="neck" placeholder="例如38" step="0.1">
+</div>
+<div>
+<label>腰围 cm</label>
+<input type="number" id="waist" placeholder="例如85" step="0.1">
+</div>
+</div>
+<div class="set-row">
+<div>
+<label>臀围 cm（女性必填）</label>
+<input type="number" id="hip" placeholder="例如98" step="0.1">
 </div>
 <div>
 <label>起始体重 kg</label>
 <input type="number" id="startWeight" placeholder="例如105" step="0.1">
 </div>
 </div>
+<div>
 <label>目标体重 kg</label>
 <input type="number" id="targetWeight" placeholder="例如70" step="0.1">
+</div>
 <button class="orange" onclick="saveBaseInfo()">保存基础信息，重新计算</button>
 <p class="bmi-text" id="bmiBox"></p>
+<p class="bodyfat-text" id="bodyFatBox"></p>
+</div>
+
+<div class="card">
+<h2>🍽️ 食物热量计算器</h2>
+<div class="set-row">
+<div>
+<label>选择食物</label>
+<select id="foodSelect">
+<option value="chickenBreast">鸡胸肉(生)</option>
+<option value="potato">土豆(生)</option>
+<option value="eggWhole">全鸡蛋</option>
+<option value="broccoli">西兰花</option>
+<option value="lettuce">生菜</option>
+<option value="cucumber">黄瓜</option>
+<option value="tomato">番茄</option>
+<option value="brownRice">糙米(生)</option>
+<option value="beefLean">瘦牛肉(生)</option>
+<option value="shrimp">大虾(生)</option>
+</select>
+</div>
+<div>
+<label>食物克数(g)</label>
+<input type="number" id="foodGram" placeholder="100" value="100" step="1">
+</div>
+</div>
+<button class="green" onclick="calcFoodNutrition()">计算营养</button>
+<div class="nutri-text" id="foodResult"></div>
+</div>
+
+<div class="card">
+<h2>📋 自动生成减脂食谱</h2>
+<div class="set-row">
+<div>
+<label>活动量</label>
+<select id="activityLevel">
+<option value="1.2">久坐几乎不运动</option>
+<option value="1.375">轻度运动 1-3次/周</option>
+<option value="1.55">中度运动 3-5次/周</option>
+<option value="1.725">高强度运动 6-7次/周</option>
+</select>
+</div>
+<div>
+<label>食谱方案</label>
+<select id="recipeType">
+<option value="planA">方案A：土豆+鸡胸</option>
+<option value="planB">方案B：糙米+瘦牛肉</option>
+<option value="planC">方案C：红薯+鱼虾</option>
+</select>
+</div>
+</div>
+<button class="green" onclick="generateRecipe()">生成食谱</button>
+<div class="recipe-box" id="recipeResult"></div>
 </div>
 
 <div class="card">
@@ -68,13 +149,13 @@ canvas{width:100%;height:220px;margin-top:8px;border-radius:8px}
 <div class="card">
 <h3>📅 今日打卡</h3>
 <div class="check-item">
-<input type="checkbox" id="chkBreakfast"><label for="chkBreakfast">早餐达标（燕麦/红薯+鸡蛋）</label>
+<input type="checkbox" id="chkBreakfast"><label for="chkBreakfast">早餐达标</label>
 </div>
 <div class="check-item">
-<input type="checkbox" id="chkLunch"><label for="chkLunch">午餐达标｜蛋白+双青菜+半份主食</label>
+<input type="checkbox" id="chkLunch"><label for="chkLunch">午餐达标</label>
 </div>
 <div class="check-item">
-<input type="checkbox" id="chkDinner"><label for="chkDinner">晚餐：不饿不吃 / 兜底轻食</label>
+<input type="checkbox" id="chkDinner"><label for="chkDinner">晚餐达标</label>
 </div>
 <div class="check-item">
 <input type="checkbox" id="chkWater"><label for="chkWater">饮水≥2000ml</label>
@@ -91,12 +172,12 @@ canvas{width:100%;height:220px;margin-top:8px;border-radius:8px}
 </div>
 
 <div class="card">
-<h3>📈 体重趋势图</h3>
+<h3>📈 体重 & 体脂双曲线图（蓝=体重，玫红=体脂）</h3>
 <canvas id="chartCanvas"></canvas>
 </div>
 
 <div class="card">
-<h3>📖 当前阶段规则</h3>
+<h3>📖 当前阶段规则｜土豆为主食，每日生鸡胸肉300g</h3>
 <div id="ruleBox"></div>
 </div>
 
@@ -107,208 +188,258 @@ canvas{width:100%;height:220px;margin-top:8px;border-radius:8px}
 </div>
 
 <script>
-//阶段配置，放纵餐周期 days
+//食物营养数据库（每100g）
+const foodDB = {
+chickenBreast:{name:"鸡胸肉(生)",kcal:110,protein:23,carb:0,fat:1},
+potato:{name:"土豆(生)",kcal:77,protein:2,carb:17,fat:0.1},
+eggWhole:{name:"全鸡蛋",kcal:143,protein:13,carb:1,fat:10},
+broccoli:{name:"西兰花",kcal:34,protein:2.8,carb:6,fat:0.4},
+lettuce:{name:"生菜",kcal:16,protein:1,carb:2.3,fat:0.2},
+cucumber:{name:"黄瓜",kcal:16,protein:0.6,carb:3,fat:0.2},
+tomato:{name:"番茄",kcal:18,protein:0.9,carb:3.9,fat:0.2},
+brownRice:{name:"糙米(生)",kcal:345,protein:7,carb:77,fat:2.8},
+beefLean:{name:"瘦牛肉(生)",kcal:125,protein:22,carb:0,fat:4},
+shrimp:{name:"大虾(生)",kcal:85,protein:20,carb:0,fat:0.2}
+};
+
 const stages = {
-1:{name:"阶段①：减脂前期",cheatCycle:14,desc:`
-✅热量：1400～1550大卡<br>
-✅晚餐：不饿不吃；心慌胃痛吃兜底餐（蛋/黄瓜/豆腐）<br>
-✅放纵餐：2周1次自助（中午吃，7分饱）<br>
-✅训练：每周5练｜周三、周日休息<br>
-5min热身 → 2轮循环：<br>
-靠墙静蹲25~30s｜坐姿抬腿12次｜跪姿俯卧撑6~8次｜臀桥15次｜跪姿平板20s<br>
-5min拉伸<br>
-✅蛋白≥110g/天；每周1次早空腹称重
+1:{name:"阶段①：减脂前期｜1400~1550kcal｜放纵餐14天一次",cheatCycle:14,desc:`
+✅每日蛋白：生鸡胸肉300g（午餐150g，晚餐150g）<br>
+✅主食：土豆（全部为生重，土豆当做主食，不吃米饭面条）<br>
+🍽 早餐：土豆150g + 鸡蛋2个 + 黄瓜/番茄<br>
+🍽 午餐：鸡胸肉150g + 土豆200g + 大量绿叶蔬菜<br>
+🍽 晚餐：鸡胸肉150g + 土豆100g + 菌菇类蔬菜<br>
+✅烹饪：水煮/清蒸/空气炸锅，用油≤10g；土豆禁止油炸<br>
+✅饮水≥2000ml；每周晨起空腹称重1次
 `},
-2:{name:"阶段②：减脂中期",cheatCycle:21,desc:`
-✅热量：1350～1500大卡<br>
-✅晚餐：每天固定少量蛋白+蔬菜（100~200kcal）<br>
-✅放纵餐：3周1次自助<br>
-✅训练：每周5练，25~30min，3轮循环<br>
-靠墙静蹲40s｜坐姿抬腿15次｜跪姿俯卧撑10次｜臀桥20次｜跪姿平板30s<br>
-休息日平地慢走40分钟<br>
-✅蛋白≥100g/天
+2:{name:"阶段②：减脂中期｜1350~1500kcal｜放纵餐21天一次",cheatCycle:21,desc:`
+✅每日蛋白：生鸡胸肉300g（午餐150g，晚餐150g）<br>
+✅主食：土豆（生重），碳水减少<br>
+🍽 早餐：土豆120g + 鸡蛋2个 + 小番茄<br>
+🍽 午餐：鸡胸肉150g + 土豆150g + 西兰花/生菜<br>
+🍽 晚餐：鸡胸肉150g + 土豆80g + 冬瓜/芹菜<br>
+✅少油少盐，尽量不用含糖酱料
 `},
-3:{name:"阶段③：减脂后期",cheatCycle:28,desc:`
-✅热量：1300～1450大卡<br>
-✅三餐全部正常吃，午餐主食2/3份<br>
-✅晚餐：蛋白+蔬菜150~220大卡<br>
-✅放纵餐：4周1次自助，严格7分饱<br>
-✅训练：每周5练30分钟，3轮循环<br>
-靠墙静蹲50s｜坐姿抬腿18次｜跪姿俯卧撑12次｜臀桥22次｜跪姿平板40s<br>
-每周额外2次快走40分钟<br>
-✅蛋白≥90g/天
+3:{name:"阶段③：减脂后期｜1300~1450kcal｜放纵餐28天一次",cheatCycle:28,desc:`
+✅每日蛋白：生鸡胸肉300g（午餐150g，晚餐150g）<br>
+✅主食：土豆（生重）继续减量<br>
+🍽 早餐：土豆100g + 鸡蛋2个<br>
+🍽 午餐：鸡胸肉150g + 土豆120g + 混合蔬菜<br>
+🍽 晚餐：鸡胸肉150g + 土豆60g + 菌菇/绿叶菜<br>
+✅适合体重缓慢下降阶段
 `},
-4:{name:"可选冲刺：精细化减脂",cheatCycle:28,desc:`
-✅温和缺口300大卡，力量训练不能停<br>
-✅完整三餐，严控油脂<br>
-✅放纵餐最多4周1次<br>
-⚠️重点监测：睡眠、脱发、疲劳，不适立刻停止
+4:{name:"可选冲刺：精细化减脂｜放纵餐28天一次",cheatCycle:28,desc:`
+✅每日蛋白：生鸡胸肉300g（午餐150g，晚餐150g）<br>
+✅主食：土豆最低量，适合平台期突破<br>
+🍽 早餐：土豆80g + 鸡蛋2个<br>
+🍽 午餐：鸡胸肉150g + 土豆100g + 大量蔬菜<br>
+🍽 晚餐：鸡胸肉150g + 土豆50g + 蔬菜<br>
+⚠️重点监测：睡眠、脱发、疲劳，不适立刻上调碳水
 `}
 };
 
 let currentStage = 1;
 let records = JSON.parse(localStorage.getItem('fatLog')) || [];
-//基础信息 本地持久存储
 let baseInfo = JSON.parse(localStorage.getItem('fatBaseInfo')) || {
-    height:175,
-    startWeight:105,
-    targetWeight:70
+gender:"male",
+height:175,
+neck:38,
+waist:85,
+hip:98,
+startWeight:105,
+targetWeight:70
 };
+
+//食物热量计算
+function calcFoodNutrition(){
+const foodKey = document.getElementById("foodSelect").value;
+const gram = Number(document.getElementById("foodGram").value);
+if(isNaN(gram)||gram<=0){document.getElementById("foodResult").innerText="请输入有效克数";return;}
+const f = foodDB[foodKey];
+const ratio = gram / 100;
+const kcal = (f.kcal * ratio).toFixed(1);
+const pro = (f.protein * ratio).toFixed(1);
+const carb = (f.carb * ratio).toFixed(1);
+const fat = (f.fat * ratio).toFixed(1);
+document.getElementById("foodResult").innerText = `${f.name} ${gram}g｜热量:${kcal}kcal｜蛋白质:${pro}g｜碳水:${carb}g｜脂肪:${fat}g`;
+}
+
+//自动生成食谱
+function generateRecipe(){
+const h = Number(document.getElementById("height").value);
+const w = Number(document.getElementById("weightToday").value) || baseInfo.startWeight;
+const gender = baseInfo.gender;
+const act = Number(document.getElementById("activityLevel").value);
+const plan = document.getElementById("recipeType").value;
+if(isNaN(h)||isNaN(w)){document.getElementById("recipeResult").innerText="请填写身高体重";return;}
+let bmr;
+if(gender==="male") bmr = 10*w + 6.25*h - 5 + 5;
+else bmr = 10*w + 6.25*h -5 -161;
+const tdee = bmr * act;
+const targetCal = Math.round(tdee - 400);
+let html = `<b>基础代谢BMR：${Math.round(bmr)} kcal｜每日消耗TDEE：${Math.round(tdee)}kcal｜减脂推荐摄入：${targetCal}kcal</b><br>`;
+if(plan==="planA"){
+html +=`方案A【土豆+鸡胸肉】<br>早餐：土豆150g + 鸡蛋2个 + 番茄<br>午餐：鸡胸肉150g + 土豆200g + 西兰花200g<br>晚餐：鸡胸肉150g + 土豆100g + 生菜<br>蛋白合计≈66g，碳水来自土豆，少油烹饪`;
+}else if(plan==="planB"){
+html +=`方案B【糙米+瘦牛肉】<br>早餐：糙米80g生 + 鸡蛋2个 + 黄瓜<br>午餐：瘦牛肉140g + 糙米100g生 + 大量青菜<br>晚餐：瘦牛肉100g + 少量菌菇蔬菜<br>适合不爱吃土豆人群`;
+}else{
+html +=`方案C【红薯+鱼虾】<br>早餐：红薯180g + 鸡蛋2个<br>午餐：大虾180g + 红薯150g + 西兰花<br>晚餐：鱼肉120g + 绿叶蔬菜<br>脂肪偏低，口味清淡`;
+}
+document.getElementById("recipeResult").innerHTML = html;
+}
 
 //保存基础信息
 function saveBaseInfo(){
-    const h = parseFloat(document.getElementById('height').value);
-    const sw = parseFloat(document.getElementById('startWeight').value);
-    const tw = parseFloat(document.getElementById('targetWeight').value);
-    if(isNaN(h)||isNaN(sw)||isNaN(tw)){
-        alert('身高、起始体重、目标体重不能为空');
-        return;
-    }
-    baseInfo.height = h;
-    baseInfo.startWeight = sw;
-    baseInfo.targetWeight = tw;
-    localStorage.setItem('fatBaseInfo',JSON.stringify(baseInfo));
-    alert('基础信息已更新，页面已重新计算进度！');
-    render();
+baseInfo.gender = document.getElementById('gender').value;
+baseInfo.height = parseFloat(document.getElementById('height').value);
+baseInfo.neck = parseFloat(document.getElementById('neck').value);
+baseInfo.waist = parseFloat(document.getElementById('waist').value);
+baseInfo.hip = parseFloat(document.getElementById('hip').value);
+baseInfo.startWeight = parseFloat(document.getElementById('startWeight').value);
+baseInfo.targetWeight = parseFloat(document.getElementById('targetWeight').value);
+if(isNaN(baseInfo.height)||isNaN(baseInfo.neck)||isNaN(baseInfo.waist)||isNaN(baseInfo.hip)||isNaN(baseInfo.startWeight)||isNaN(baseInfo.targetWeight)){
+alert('所有基础信息不能为空！女性臀围必须填写');return;
+}
+localStorage.setItem('fatBaseInfo',JSON.stringify(baseInfo));
+alert('基础信息已更新，页面已重新计算！');render();
 }
 
 //BMI计算
 function calcBMI(weight,heightCm){
-    const hM = heightCm / 100;
-    return (weight/(hM*hM)).toFixed(1);
+const hM = heightCm / 100;return (weight/(hM*hM)).toFixed(1);
 }
 
-//绘制体重曲线（自适应画布）
+//海军体脂公式 男女两套
+function calcBodyFat(gender, heightCm, waistCm, neckCm, hipCm){
+let bf;
+if(gender === "male"){
+bf = 495 / (1.0324 - 0.19077 * Math.log10(waistCm - neckCm) + 0.15456 * Math.log10(heightCm)) - 450;
+}else{
+bf = 495 / (1.29579 - 0.35004 * Math.log10(waistCm + hipCm - neckCm) + 0.22100 * Math.log10(heightCm)) - 450;
+}
+return bf.toFixed(1);
+}
+
+//双曲线绘图：体重+体脂
 function drawChart(){
-    const canvas = document.getElementById('chartCanvas');
-    const ctx = canvas.getContext('2d');
-    // 自适应宽高
-    const containerWidth = canvas.offsetWidth;
-    canvas.width = containerWidth * 2;
-    canvas.height = 440;
-    ctx.scale(2,2);
-    const w = containerWidth;
-    const h = 220;
-    ctx.clearRect(0,0,w,h);
-    const weightRecords = records.filter(r=>!isNaN(parseFloat(r.weight)));
-    if(weightRecords.length<2){
-        ctx.fillStyle="#666";
-        ctx.font="14px system-ui";
-        ctx.textAlign="center";
-        ctx.fillText("至少2条体重记录才会绘制曲线",w/2,h/2);
-        return;
-    }
-    const weights = weightRecords.map(x=>parseFloat(x.weight));
-    const minW = Math.min(...weights)-1;
-    const maxW = Math.max(...weights)+1;
-    //坐标轴
-    ctx.strokeStyle="#ddd";
-    ctx.beginPath();
-    ctx.moveTo(30,20);ctx.lineTo(30,h-30);ctx.lineTo(w-10,h-30);
-    ctx.stroke();
-    //折线
-    ctx.strokeStyle="#3b82f6";
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    weightRecords.forEach((rec,i)=>{
-        const x = 30 + (i/(weightRecords.length-1))*(w-40);
-        const y = h-30 - ((parseFloat(rec.weight)-minW)/(maxW-minW))*(h-50);
-        if(i===0) ctx.moveTo(x,y);
-        else ctx.lineTo(x,y);
-    });
-    ctx.stroke();
-    //圆点
-    ctx.fillStyle="#3b82f6";
-    weightRecords.forEach((rec,i)=>{
-        const x = 30 + (i/(weightRecords.length-1))*(w-40);
-        const y = h-30 - ((parseFloat(rec.weight)-minW)/(maxW-minW))*(h-50);
-        ctx.beginPath();
-        ctx.arc(x,y,3,0,Math.PI*2);
-        ctx.fill();
-    })
+const canvas = document.getElementById('chartCanvas');
+const ctx = canvas.getContext('2d');
+const containerWidth = canvas.offsetWidth;
+canvas.width = containerWidth * 2;
+canvas.height = 560;
+ctx.scale(2,2);
+const w = containerWidth;
+const h = 280;
+ctx.clearRect(0,0,w,h);
+const validRecords = records.filter(r=>!isNaN(parseFloat(r.weight)) && !isNaN(parseFloat(r.bodyFat)));
+if(validRecords.length<2){
+ctx.fillStyle="#666";ctx.font="14px system-ui";ctx.textAlign="center";
+ctx.fillText("至少2条打卡记录才会绘制体重&体脂曲线",w/2,h/2);return;
+}
+//提取数据
+const dates = validRecords.map(r=>r.date);
+const weights = validRecords.map(r=>Number(r.weight));
+const bodyFats = validRecords.map(r=>Number(r.bodyFat));
+//体重Y轴
+const minW = Math.min(...weights)-1;const maxW = Math.max(...weights)+1;
+//体脂Y轴
+const minBF = Math.min(...bodyFats)-2;const maxBF = Math.max(...bodyFats)+2;
+const count = validRecords.length;
+const stepX = (w-60)/(count-1);
+
+//绘制体重曲线蓝色
+ctx.beginPath();ctx.strokeStyle="#3b82f6";ctx.lineWidth=2;
+for(let i=0;i<count;i++){
+const x = 30 + i*stepX;
+const y = 30 + (maxW - weights[i])/(maxW-minW)*(h-60);
+i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+}
+ctx.stroke();
+
+//绘制体脂曲线玫红
+ctx.beginPath();ctx.strokeStyle="#db2777";ctx.lineWidth=2;
+for(let i=0;i<count;i++){
+const x = 30 + i*stepX;
+const y = 30 + (maxBF - bodyFats[i])/(maxBF-minBF)*(h-60);
+i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+}
+ctx.stroke();
+
+//坐标文字
+ctx.fillStyle="#333";ctx.font="10px system-ui";
+ctx.fillText("体重(kg)",10,40);
+ctx.fillStyle="#db2777";
+ctx.fillText("体脂(%)",10,60);
 }
 
-//放纵餐倒计时
 function renderCheatCountdown(){
-    const s = stages[currentStage];
-    const cheatRecords = records.filter(r=>r.cheat).map(r=>new Date(r.date));
-    if(cheatRecords.length===0){
-        document.getElementById('cheatCountdown').innerText=`🍖放纵餐周期：${s.cheatCycle}天｜还未记录自助，打卡勾选自助后开始倒计时`;
-        return;
-    }
-    const lastCheat = cheatRecords.sort((a,b)=>b-a)[0];
-    const nextCheat = new Date(lastCheat);
-    nextCheat.setDate(nextCheat.getDate()+s.cheatCycle);
-    const now = new Date();
-    const diff = Math.ceil((nextCheat - now)/(1000*3600*24));
-    if(diff<=0){
-        document.getElementById('cheatCountdown').innerText="🍖可以安排自助啦！（记得控制7分饱，中午吃）";
-    }else{
-        document.getElementById('cheatCountdown').innerText=`🍖距离下次东盛自助：还有 ${diff} 天（周期${s.cheatCycle}天）`;
-    }
+const s = stages[currentStage];
+const cheatRecords = records.filter(r=>r.cheat).map(r=>new Date(r.date));
+if(cheatRecords.length===0){
+document.getElementById('cheatCountdown').innerText=`🍖放纵餐周期：${s.cheatCycle}天｜还未记录自助，打卡勾选自助后开始倒计时`;return;
+}
+const lastCheat = cheatRecords.sort((a,b)=>b-a)[0];
+const nextCheat = new Date(lastCheat);
+nextCheat.setDate(nextCheat.getDate()+s.cheatCycle);
+const now = new Date();
+const diff = Math.ceil((nextCheat - now)/(1000*3600*24));
+if(diff<=0){
+document.getElementById('cheatCountdown').innerText="🍖可以安排自助啦！（记得控制7分饱，中午吃）";
+}else{
+document.getElementById('cheatCountdown').innerText=`🍖距离下次东盛自助：还有 ${diff} 天（周期${s.cheatCycle}天）`;
+}
 }
 
 function render(){
-    //回填基础信息输入框
-    document.getElementById('height').value = baseInfo.height;
-    document.getElementById('startWeight').value = baseInfo.startWeight;
-    document.getElementById('targetWeight').value = baseInfo.targetWeight;
+document.getElementById('gender').value = baseInfo.gender;
+document.getElementById('height').value = baseInfo.height;
+document.getElementById('neck').value = baseInfo.neck;
+document.getElementById('waist').value = baseInfo.waist;
+document.getElementById('hip').value = baseInfo.hip;
+document.getElementById('startWeight').value = baseInfo.startWeight;
+document.getElementById('targetWeight').value = baseInfo.targetWeight;
 
-    const s = stages[currentStage];
-    document.getElementById('stageInfo').innerText = s.name;
-    document.getElementById('ruleBox').innerHTML = s.desc;
-    renderCheatCountdown();
+const s = stages[currentStage];
+document.getElementById('stageInfo').innerText = s.name;
+document.getElementById('ruleBox').innerHTML = s.desc;
+renderCheatCountdown();
 
-    const lastW = records.length ? records[records.length-1].weight : baseInfo.startWeight;
-    //计算BMI
-    const bmi = calcBMI(lastW, baseInfo.height);
-    document.getElementById('bmiBox').innerText = `当前BMI：${bmi}`;
+const lastW = records.length ? records[records.length-1].weight : baseInfo.startWeight;
+const bmi = calcBMI(lastW, baseInfo.height);
+document.getElementById('bmiBox').innerText = `当前BMI：${bmi}`;
+const bodyFatVal = calcBodyFat(baseInfo.gender, baseInfo.height, baseInfo.waist, baseInfo.neck, baseInfo.hip);
+document.getElementById('bodyFatBox').innerText = `估算体脂率：${bodyFatVal}%（仅参考，非专业仪器测量）`;
 
-    //进度
-    const totalReduce = baseInfo.startWeight - baseInfo.targetWeight;
-    const doneReduce = baseInfo.startWeight - lastW;
-    const pct = totalReduce <= 0 ? 0 : Math.max(0,Math.min(100, doneReduce/totalReduce*100)).toFixed(1);
-    document.getElementById('progressBar').style.width = pct+'%';
-    document.getElementById('progressText').innerText=`当前${lastW}kg，目标${baseInfo.targetWeight}kg，总减重进度${pct}%`;
-    //日志
-    document.getElementById('logBox').innerHTML = records.slice(-10).reverse().map(r=>`
-<div class="log-item">${r.date}｜体重${r.weight}kg｜饮食${r.food?'✅':'❌'}｜训练${r.train?'✅':'❌'}｜自助${r.cheat?'🍖':'❌'}</div>`).join('');
-    drawChart();
+const totalReduce = baseInfo.startWeight - baseInfo.targetWeight;
+const doneReduce = baseInfo.startWeight - lastW;
+const pct = totalReduce <= 0 ? 0 : Math.max(0,Math.min(100, doneReduce/totalReduce*100)).toFixed(1);
+document.getElementById('progressBar').style.width = pct+'%';
+document.getElementById('progressText').innerText=`当前${lastW}kg，目标${baseInfo.targetWeight}kg，总减重进度${pct}%`;
+document.getElementById('logBox').innerHTML = records.slice(-10).reverse().map(r=>`
+<div class="log-item">${r.date}｜体重${r.weight}kg｜估算体脂${r.bodyFat}%｜早餐${r.food?'✅':'❌'}｜训练${r.train?'✅':'❌'}｜自助${r.cheat?'🍖':'❌'}</div>`).join('');
+drawChart();
 }
-function switchStage(n){
-    currentStage=n;
-    render();
-}
+function switchStage(n){currentStage=n;render();}
 function saveToday(){
-    const w = parseFloat(document.getElementById('weightToday').value);
-    if(isNaN(w)){alert('请填写体重');return;}
-    const rec = {
-        date:new Date().toLocaleDateString(),
-        weight:w,
-        food:document.getElementById('chkBreakfast').checked && document.getElementById('chkLunch').checked && document.getElementById('chkDinner').checked,
-        train:document.getElementById('chkTrain').checked,
-        water:document.getElementById('chkWater').checked,
-        cheat:document.getElementById('chkCheat').checked
-    };
-    records.push(rec);
-    localStorage.setItem('fatLog',JSON.stringify(records));
-    alert('打卡保存成功！');
-    clearToday();
-    render();
+const w = parseFloat(document.getElementById('weightToday').value);
+if(isNaN(w)){alert('请填写体重');return;}
+const bodyFatNow = calcBodyFat(baseInfo.gender, baseInfo.height, baseInfo.waist, baseInfo.neck, baseInfo.hip);
+const rec = {
+date:new Date().toLocaleDateString(),weight:w,bodyFat:bodyFatNow,
+food:document.getElementById('chkBreakfast').checked && document.getElementById('chkLunch').checked && document.getElementById('chkDinner').checked,
+train:document.getElementById('chkTrain').checked,water:document.getElementById('chkWater').checked,cheat:document.getElementById('chkCheat').checked
+};
+records.push(rec);localStorage.setItem('fatLog',JSON.stringify(records));
+alert('打卡保存成功！');clearToday();render();
 }
 function clearToday(){
-    document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
-    document.getElementById('weightToday').value='';
+document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
+document.getElementById('weightToday').value='';
 }
 function clearAllLog(){
-    if(confirm('确定删除全部打卡记录？无法恢复！')){
-        records=[];localStorage.removeItem('fatLog');render();
-    }
+if(confirm('确定删除全部打卡记录？无法恢复！')){records=[];localStorage.removeItem('fatLog');render();}
 }
-//窗口大小改变时，重绘图表
-window.addEventListener('resize',()=>{
-    setTimeout(drawChart,100);
-});
+window.addEventListener('resize',()=>{setTimeout(drawChart,100);});
 render();
 </script>
 </body>

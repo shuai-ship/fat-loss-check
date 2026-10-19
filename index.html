@@ -60,6 +60,16 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
     font-weight:500;
     margin:8px 0;
 }
+.match-tip{
+    color:#3b82f6;
+    font-size:13px;
+    margin:4px 0;
+}
+.notfound-tip{
+    color:#ef4444;
+    font-size:13px;
+    margin:4px 0;
+}
 </style>
 </head>
 <body>
@@ -210,7 +220,7 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 </div>
 </div>
 
-<!-- Tab2：食物&食谱｜自定义食物录入+管理删除+今日食物录入+热量+三大营养素对比 -->
+<!-- Tab2：食物&食谱｜食物检索录入 -->
 <div id="tab2" class="tab-content">
 <div class="card">
 <h2>🍽️ 食物热量计算器</h2>
@@ -218,7 +228,6 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 <div>
 <label>选择食物</label>
 <select id="foodSelect">
-<!-- 选项由JS动态渲染（内置库+自定义食物） -->
 </select>
 </div>
 <div>
@@ -231,10 +240,13 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 <div class="nutri-text" id="foodResult"></div>
 </div>
 
-<!-- 【新增】自定义食物录入卡片 -->
+<!-- 【核心：只输入食物名称，自动匹配营养】 -->
 <div class="card">
-<h3>➕ 添加自定义食物（每100g营养）</h3>
-<input type="text" id="customFoodName" placeholder="食物名称，例：全麦面包">
+<h3>🔍 输入食物名称自动查询营养（每100g）</h3>
+<input type="text" id="searchFoodName" placeholder="输入食物名，例如：苹果、鸡胸肉、米饭">
+<div id="matchTip" class="match-tip"></div>
+<div id="autoPreview" class="preview-nutri"></div>
+
 <div class="set-row">
 <input type="number" id="customKcal" placeholder="热量kcal" step="0.1">
 <input type="number" id="customProtein" placeholder="蛋白质g" step="0.1">
@@ -243,11 +255,10 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 <input type="number" id="customCarb" placeholder="碳水g" step="0.1">
 <input type="number" id="customFat" placeholder="脂肪g" step="0.1">
 </div>
-<!-- 实时预览区域 -->
-<div id="autoPreview" class="preview-nutri"></div>
 <button onclick="addCustomFood()">保存到我的食物库</button>
 <div id="customFoodTip" class="tip-text"></div>
 </div>
+
 <!-- 自定义食物列表+删除 -->
 <div class="card">
 <h3>📋 我的自定义食物库（可删除）</h3>
@@ -297,28 +308,74 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 </div>
 
 <script>
-//内置食物营养数据库【每100g】
+// ===================== 扩充超大食物库【8大类｜每100g营养】====================
 const defaultFoodDB = {
-chickenBreast:{name:"鸡胸肉(生)",kcal:110,protein:23,carb:0,fat:1},
-potato:{name:"土豆(生)",kcal:77,protein:2,carb:17,fat:0.1},
-eggWhole:{name:"全鸡蛋",kcal:143,protein:13,carb:1,fat:10},
-eggWhite:{name:"蛋清",kcal:60,protein:11,carb:1,fat:0.1},
-broccoli:{name:"西兰花",kcal:34,protein:2.8,carb:6,fat:0.4},
-lettuce:{name:"生菜",kcal:16,protein:1,carb:2.3,fat:0.2},
-cucumber:{name:"黄瓜",kcal:16,protein:0.6,carb:3,fat:0.2},
-tomato:{name:"番茄",kcal:18,protein:0.9,carb:3.9,fat:0.2},
-brownRice:{name:"糙米(生)",kcal:345,protein:7,carb:77,fat:2.8},
-sweetPotato:{name:"红薯(生)",kcal:86,protein:1.6,carb:20,fat:0.1},
-beefLean:{name:"瘦牛肉(生)",kcal:125,protein:22,carb:0,fat:4},
-shrimp:{name:"大虾(生)",kcal:85,protein:20,carb:0,fat:0.2},
-cod:{name:"鳕鱼",kcal:82,protein:18,carb:0,fat:1},
-oatRaw:{name:"燕麦（干）",kcal:389,protein:13,carb:66,fat:7},
-greekYogurt:{name:"无糖希腊酸奶",kcal:70,protein:10,carb:3,fat:0},
-oliveOil:{name:"橄榄油",kcal:898,protein:0,carb:0,fat:99.8},
-mushroom:{name:"香菇",kcal:26,protein:2.2,carb:4.1,fat:0.3},
-spinach:{name:"菠菜",kcal:28,protein:2.9,carb:3.6,fat:0.4},
-apple:{name:"苹果",kcal:52,protein:0.3,carb:14,fat:0.2},
-banana:{name:"香蕉",kcal:91,protein:1.1,carb:23,fat:0.3}
+// 🍠主食类
+riceCooked:{name:"熟米饭",cat:"主食",kcal:116,protein:2.6,carb:26,fat:0.3},
+riceRaw:{name:"大米(生)",cat:"主食",kcal:345,protein:7,carb:78,fat:0.8},
+oatRaw:{name:"燕麦干",cat:"主食",kcal:389,protein:13,carb:66,fat:7},
+brownRice:{name:"糙米(生)",cat:"主食",kcal:345,protein:7,carb:77,fat:2.8},
+potato:{name:"土豆(生)",cat:"主食",kcal:77,protein:2,carb:17,fat:0.1},
+potatoCooked:{name:"土豆(水煮熟)",cat:"主食",kcal:77,protein:2,carb:17,fat:0.1},
+sweetPotato:{name:"红薯(生)",cat:"主食",kcal:86,protein:1.6,carb:20,fat:0.1},
+yam:{name:"山药",cat:"主食",kcal:57,protein:1.9,carb:12,fat:0.2},
+corn:{name:"鲜玉米",cat:"主食",kcal:116,protein:4,carb:25,fat:1.2},
+wholeWheatBread:{name:"全麦面包",cat:"主食",kcal:250,protein:9,carb:42,fat:3.5},
+noodleCooked:{name:"熟面条",cat:"主食",kcal:130,protein:4,carb:25,fat:0.5},
+
+// 🥬蔬菜类
+broccoli:{name:"西兰花",cat:"蔬菜",kcal:34,protein:2.8,carb:6,fat:0.4},
+lettuce:{name:"生菜",cat:"蔬菜",kcal:16,protein:1,carb:2.3,fat:0.2},
+cucumber:{name:"黄瓜",cat:"蔬菜",kcal:16,protein:0.6,carb:3,fat:0.2},
+tomato:{name:"番茄",cat:"蔬菜",kcal:18,protein:0.9,carb:3.9,fat:0.2},
+spinach:{name:"菠菜",cat:"蔬菜",kcal:28,protein:2.9,carb:3.6,fat:0.4},
+mushroom:{name:"香菇",cat:"蔬菜",kcal:26,protein:2.2,carb:4.1,fat:0.3},
+cabbage:{name:"卷心菜",cat:"蔬菜",kcal:22,protein:1.5,carb:4.6,fat:0.2},
+celery:{name:"芹菜",cat:"蔬菜",kcal:16,protein:0.8,carb:3.4,fat:0.2},
+eggplant:{name:"茄子",cat:"蔬菜",kcal:25,protein:1,carb:5,fat:0.2},
+cauliflower:{name:"花菜",cat:"蔬菜",kcal:25,protein:2,carb:5,fat:0.4},
+
+// 🥩肉蛋类
+chickenBreast:{name:"鸡胸肉(生)",cat:"肉蛋",kcal:110,protein:23,carb:0,fat:1},
+chickenThigh:{name:"鸡腿肉去皮生",cat:"肉蛋",kcal:160,protein:20,carb:0,fat:8},
+beefLean:{name:"瘦牛肉(生)",cat:"肉蛋",kcal:125,protein:22,carb:0,fat:4},
+porkLean:{name:"瘦猪肉(生)",cat:"肉蛋",kcal:143,protein:20,carb:0,fat:6.2},
+eggWhole:{name:"全鸡蛋",cat:"肉蛋",kcal:143,protein:13,carb:1,fat:10},
+eggWhite:{name:"蛋清",cat:"肉蛋",kcal:60,protein:11,carb:1,fat:0.1},
+duckBreastLean:{name:"去皮鸭胸",cat:"肉蛋",kcal:105,protein:20,carb:0,fat:2.2},
+
+// 🦐水产海鲜
+shrimp:{name:"大虾(生)",cat:"水产",kcal:85,protein:20,carb:0,fat:0.2},
+cod:{name:"鳕鱼",cat:"水产",kcal:82,protein:18,carb:0,fat:1},
+tilapia:{name:"罗非鱼",cat:"水产",kcal:98,protein:18,carb:0,fat:2},
+salmon:{name:"三文鱼生",cat:"水产",kcal:139,protein:20,carb:0,fat:6.3},
+squid:{name:"鱿鱼",cat:"水产",kcal:84,protein:18,carb:0,fat:1.4},
+
+// 🍎水果类
+apple:{name:"苹果",cat:"水果",kcal:52,protein:0.3,carb:14,fat:0.2},
+banana:{name:"香蕉",cat:"水果",kcal:91,protein:1.1,carb:23,fat:0.3},
+orange:{name:"橙子",cat:"水果",kcal:47,protein:0.9,carb:11.8,fat:0.2},
+grape:{name:"葡萄",cat:"水果",kcal:69,protein:0.7,carb:18,fat:0.2},
+strawberry:{name:"草莓",cat:"水果",kcal:32,protein:0.7,carb:7.7,fat:0.3},
+blueberry:{name:"蓝莓",cat:"水果",kcal:57,protein:0.7,carb:14.5,fat:0.3},
+
+// 🥛奶制品
+milkWhole:{name:"全脂牛奶",cat:"奶制品",kcal:62,protein:3.2,carb:4.8,fat:3.8},
+milkSkim:{name:"脱脂牛奶",cat:"奶制品",kcal:35,protein:3.4,carb:5,fat:0.2},
+greekYogurt:{name:"无糖希腊酸奶",cat:"奶制品",kcal:70,protein:10,carb:3,fat:0},
+yogurtSweet:{name:"含糖酸奶",cat:"奶制品",kcal:90,protein:3,carb:12,fat:2},
+
+// 🥜坚果&种子
+almond:{name:"杏仁",cat:"坚果",kcal:575,protein:21,carb:22,fat:50},
+walnut:{name:"核桃仁",cat:"坚果",kcal:654,protein:15,carb:14,fat:65},
+peanutRaw:{name:"生花生",cat:"坚果",kcal:567,protein:26,carb:16,fat:49},
+chiaSeed:{name:"奇亚籽干",cat:"坚果",kcal:486,protein:16,carb:42,fat:31},
+
+// 🧂油脂调料&零食
+oliveOil:{name:"橄榄油",cat:"油&调料",kcal:898,protein:0,carb:0,fat:99.8},
+butter:{name:"黄油",cat:"油&调料",kcal:717,protein:0.9,carb:0.1,fat:81},
+honey:{name:"蜂蜜",cat:"油&调料",kcal:304,protein:0.3,carb:82,fat:0},
+darkChoco70:{name:"70%黑巧克力",cat:"零食",kcal:590,protein:8,carb:28,fat:50}
 };
 
 const stages = {
@@ -375,57 +432,93 @@ targetCarb:150,
 targetFat:45
 };
 let todayFoodList = JSON.parse(localStorage.getItem('todayFoodList')) || [];
-//自定义食物库
 let customFoodDB = JSON.parse(localStorage.getItem('customFoodDB')) || {};
 
 //合并内置+自定义食物库
 function getAllFoodDB(){
   return {...defaultFoodDB, ...customFoodDB};
 }
-//渲染食物下拉选项
+
+// 🔍模糊搜索食物
+function searchFoodByName(keyword){
+  if(!keyword.trim()) return null;
+  const allFood = Object.values(getAllFoodDB());
+  const kw = keyword.trim().toLowerCase();
+  const find = allFood.find(item=> item.name.toLowerCase().includes(kw));
+  return find || null;
+}
+
+// 输入食物名，实时检索并回填预览
+function autoSearchFood(){
+  const nameInput = document.getElementById("searchFoodName");
+  const keyword = nameInput.value;
+  const matchTip = document.getElementById("matchTip");
+  const previewBox = document.getElementById("autoPreview");
+  const kcalInp = document.getElementById("customKcal");
+  const proInp = document.getElementById("customProtein");
+  const carbInp = document.getElementById("customCarb");
+  const fatInp = document.getElementById("customFat");
+
+  const found = searchFoodByName(keyword);
+  if(found){
+    matchTip.innerText = `✅匹配成功｜类目：${found.cat||"自定义"}`;
+    previewBox.innerText = `✅100g预览：${found.kcal} kcal｜蛋白质 ${found.protein}g｜碳水 ${found.carb}g｜脂肪 ${found.fat}g`;
+    //自动回填到下方输入框
+    kcalInp.value = found.kcal;
+    proInp.value = found.protein;
+    carbInp.value = found.carb;
+    fatInp.value = found.fat;
+  }else{
+    if(keyword.trim().length>0){
+      matchTip.innerText = "❌未找到该食物，请手动填写营养，保存到食物库";
+      previewBox.innerText = "";
+    }else{
+      matchTip.innerText = "";
+      previewBox.innerText = "";
+    }
+  }
+}
+
+//渲染食物下拉选项（带类目分组optgroup）
 function renderFoodSelect(){
   const foodSelect = document.getElementById("foodSelect");
   foodSelect.innerHTML = "";
   const allFood = getAllFoodDB();
-  Object.keys(allFood).forEach(key=>{
-    const f = allFood[key];
-    const opt = document.createElement("option");
-    opt.value = key;
-    opt.innerText = f.name;
-    foodSelect.appendChild(opt);
+  //分组
+  const groups = {};
+  Object.values(allFood).forEach(f=>{
+    const cat = f.cat || "自定义";
+    if(!groups[cat]) groups[cat] = [];
+    groups[cat].push(f);
   })
-}
-
-//【新增】实时预览自定义食物100g营养
-function autoPreviewCustomFood(){
-    const kcal = Number(document.getElementById("customKcal").value);
-    const pro = Number(document.getElementById("customProtein").value);
-    const carb = Number(document.getElementById("customCarb").value);
-    const fat = Number(document.getElementById("customFat").value);
-    const previewBox = document.getElementById("autoPreview");
-
-    if(isNaN(kcal) && isNaN(pro) && isNaN(carb) && isNaN(fat)){
-        previewBox.innerText = "";
-        return;
-    }
-    previewBox.innerText = `✅100g预览：${kcal||0} kcal｜蛋白质 ${pro||0}g｜碳水 ${carb||0}g｜脂肪 ${fat||0}g`;
+  for(let cat in groups){
+    const optGroup = document.createElement("optgroup");
+    optGroup.label = cat;
+    groups[cat].forEach(f=>{
+      const opt = document.createElement("option");
+      opt.value = Object.keys(allFood).find(k=>allFood[k].name === f.name);
+      opt.innerText = f.name;
+      optGroup.appendChild(opt);
+    })
+    foodSelect.appendChild(optGroup);
+  }
 }
 
 //添加自定义食物
 function addCustomFood(){
-  const name = document.getElementById("customFoodName").value.trim();
+  const name = document.getElementById("searchFoodName").value.trim();
   const kcal = Number(document.getElementById("customKcal").value);
   const pro = Number(document.getElementById("customProtein").value);
   const carb = Number(document.getElementById("customCarb").value);
   const fat = Number(document.getElementById("customFat").value);
   if(!name || isNaN(kcal)||isNaN(pro)||isNaN(carb)||isNaN(fat)){
-    document.getElementById("customFoodTip").innerText="请完整填写名称和四项营养数值";
+    document.getElementById("customFoodTip").innerText="请填写食物名称 + 完整四项营养数值";
     return;
   }
-  //生成唯一key
   const key = "cus_"+Date.now();
   customFoodDB[key] = {
     name:name,
+    cat:"自定义",
     kcal:kcal,
     protein:pro,
     carb:carb,
@@ -434,14 +527,7 @@ function addCustomFood(){
   localStorage.setItem("customFoodDB",JSON.stringify(customFoodDB));
   renderFoodSelect();
   renderCustomFoodList();
-  document.getElementById("customFoodTip").innerText=`✅【${name}】已存入食物库，下拉框可以直接选择！`;
-  //清空输入框 + 清空预览
-  document.getElementById("customFoodName").value="";
-  document.getElementById("customKcal").value="";
-  document.getElementById("customProtein").value="";
-  document.getElementById("customCarb").value="";
-  document.getElementById("customFat").value="";
-  document.getElementById("autoPreview").innerText="";
+  document.getElementById("customFoodTip").innerText=`✅【${name}】已存入食物库！`;
 }
 //渲染自定义食物列表，支持删除
 function renderCustomFoodList(){
@@ -804,7 +890,7 @@ food:document.getElementById('chkBreakfast').checked && document.getElementById(
 train:document.getElementById('chkTrain').checked,
 water:document.getElementById('chkWater').checked,
 cheat:document.getElementById('chkCheat').checked,
-foodList:JSON.parse(JSON.stringify(todayFoodList)) //保存当日食物清单到打卡记录
+foodList:JSON.parse(JSON.stringify(todayFoodList))
 };
 records.push(rec);localStorage.setItem('fatLog',JSON.stringify(records));
 alert('打卡保存成功！今日饮食已存入本次打卡记录');
@@ -819,16 +905,8 @@ if(confirm('确定删除全部打卡记录？无法恢复！')){records=[];local
 }
 document.getElementById("bfFormula").addEventListener("change",toggleNavyInputs);
 
-//绑定自定义食物输入框，输入实时触发预览
-const customInputs = [
-    document.getElementById("customKcal"),
-    document.getElementById("customProtein"),
-    document.getElementById("customCarb"),
-    document.getElementById("customFat")
-];
-customInputs.forEach(inp=>{
-    inp.addEventListener('input',autoPreviewCustomFood);
-})
+//绑定食物名称输入框，输入自动检索
+document.getElementById("searchFoodName").addEventListener('input',autoSearchFood);
 
 window.addEventListener('resize',()=>{setTimeout(drawChart,100);});
 render();

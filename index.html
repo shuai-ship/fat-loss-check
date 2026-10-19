@@ -10,16 +10,16 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏋️</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
-html,body{background:#f7f8fa;color:#222;font-size:16px}
+html,body{background:#f7f8fa;color:#222;font-size:16px;overflow-x:hidden;}
 body{padding-bottom:80px; /*底部tab不遮挡内容*/}
 
-/* 底部APP标签导航（放到页面底部，APP经典布局） */
+/* 底部APP标签导航 */
 .tab-nav{position:fixed;bottom:0;left:0;width:100%;display:flex;gap:0;background:#fff;box-shadow:0 -2px 8px #00000015;z-index:98}
 .tab-btn{flex:1;padding:14px 4px;border:none;background:transparent;font-size:14px;font-weight:500;cursor:pointer;transition:0.2s;color:#444;min-height:54px}
 .tab-btn.active{color:#3b82f6;}
 
-/* 卡片APP样式 */
-.card{background:#fff;border-radius:16px;padding:18px;margin:12px;box-shadow:0 1px 6px #0000000c}
+/* APP卡片样式 */
+.card{background:#fff;border-radius:18px;padding:18px;margin:12px;box-shadow:0 1px 6px #0000000c}
 h2{font-size:20px;margin-bottom:14px}
 h3{font-size:17px;margin:10px 0}
 button{width:100%;padding:14px 12px;border:none;border-radius:12px;background:#3b82f6;color:#fff;font-size:16px;margin:6px 0;cursor:pointer;min-height:50px}
@@ -50,7 +50,7 @@ canvas{width:calc(100% - 24px);height:280px;margin:0 12px;border-radius:16px;bac
 .food-summary{background:#eff6ff;padding:14px;border-radius:12px;margin:12px;line-height:1.7;font-size:15px}
 .diff-positive{color:#dc2626;font-weight:bold;}
 .diff-negative{color:#16a34a;font-weight:bold;}
-/* 弹窗 */
+/* APP弹窗 */
 .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;z-index:99;align-items:center;justify-content:center;padding:16px}
 .modal-content{background:#fff;border-radius:20px;padding:20px;width:calc(100% - 24px);max-height:85vh;overflow-y:auto}
 .modal-close{float:right;border:none;background:transparent;color:#666;font-size:30px;cursor:pointer;width:auto;min-height:auto;padding:0}
@@ -147,7 +147,7 @@ canvas{width:calc(100% - 24px);height:280px;margin:0 12px;border-radius:16px;bac
 <option value="kj">千焦(kJ)</option>
 </select>
 </div>
-<p class="tip-text">换算公式：1 kcal = 4.184 kJ</p>
+<p class="tip-text">换算公式：1 kcal = 4.184 kJ ｜ kcal = kJ ÷ 4.184</p>
 
 <div class="set-row">
 <div>
@@ -248,7 +248,7 @@ canvas{width:calc(100% - 24px);height:280px;margin:0 12px;border-radius:16px;bac
 <!-- 【核心：只输入食物名称，自动匹配营养】 -->
 <div class="card">
 <h3>🔍 输入食物名称自动查询营养（每100g）</h3>
-<input type="text" id="searchFoodName" placeholder="输入食物名，例如：苹果、鸡胸肉、米饭">
+<input type="text" id="searchFoodName" placeholder="输入食物名，例如：苹果、鸡胸肉、米饭" oninput="autoSearchFood()">
 <div id="matchTip" class="match-tip"></div>
 <div id="autoPreview" class="preview-nutri"></div>
 
@@ -343,7 +343,7 @@ function formatEnergy(kcalNum){
     }
 }
 
-// ===================== 扩充超大食物库【8大类｜每100g营养，底层全部存储kcal】====================
+// ===================== 食物库【8大类｜每100g营养，底层全部存储kcal】====================
 const defaultFoodDB = {
 // 🍠主食类
 riceCooked:{name:"熟米饭",cat:"主食",kcal:116,protein:2.6,carb:26,fat:0.3},
@@ -892,4 +892,7 @@ document.getElementById('stageInfo').innerText = s.name;
 document.getElementById('ruleBox').innerHTML = s.desc;
 renderCheatCountdown();
 
-const
+//BMI、体脂计算渲染
+const bmi = calcBMI(baseInfo.startWeight,baseInfo.height);
+const bf = calcBodyFat(baseInfo.gender,baseInfo.bfFormula,baseInfo.age,baseInfo.height,baseInfo.startWeight,baseInfo.waist,baseInfo.neck,baseInfo.hip);
+document.getElementById('bmiBox').inner

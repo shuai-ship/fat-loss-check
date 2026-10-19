@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>减脂打卡工具</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -10,8 +10,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏋️</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
-html,body{padding:12px;background:#f7f8fa;color:#222;width:100%;min-height:100vh}
-body{width:100%;max-width:100%;margin:0 auto}
+html,body{padding:12px;background:#f7f8fa;color:#222}
+body{max-width:720px;margin:0 auto}
 
 /* Tab导航样式 - 修改文字为黑色 */
 .tab-nav{display:flex;gap:4px;margin-bottom:12px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 4px #00000012}
@@ -19,7 +19,7 @@ body{width:100%;max-width:100%;margin:0 auto}
 .tab-btn.active{background:#3b82f6;color:#fff !important;}
 
 /* 卡片通用 */
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px #00000012;width:100%}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px #00000012}
 h2{font-size:18px;margin-bottom:12px}
 h3{font-size:16px;margin:8px 0}
 button{padding:10px 12px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:14px;margin:4px;cursor:pointer;min-height:42px}
@@ -30,7 +30,7 @@ input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px
 select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;font-size:14px;background:#fff}
 #bfFormula{font-size:13px;}
 .check-item{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:14px}
-.progress{height:12px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin:10px 0;width:100%}
+.progress{height:12px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin:10px 0}
 .progress>div{height:100%;background:#3b82f6;width:0%}
 .log-item{padding:8px;border-bottom:1px solid #eee;font-size:13px;word-break:break-all;cursor:pointer;}
 .log-item:hover{background:#f6f8ff}
@@ -38,7 +38,7 @@ select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6p
 .tab-content.active{display:block}
 canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 .countdown{background:#fef3c7;color:#92400e;padding:12px;border-radius:8px;margin:8px 0;font-weight:bold;font-size:14px}
-.set-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.set-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .bmi-text{color:#2563eb;font-weight:bold;margin:6px 0;font-size:14px}
 .bodyfat-text{color:#db2777;font-weight:bold;margin:6px 0;font-size:14px}
 .nutri-text{color:#222;font-size:14px;margin:6px 0;line-height:1.5}
@@ -672,29 +672,26 @@ const canvas = document.getElementById('chartCanvas');
 if(!canvas) return;
 const ctx = canvas.getContext('2d');
 const containerWidth = canvas.offsetWidth;
-canvas.width = containerWidth * 2;
-canvas.height = 560;
-ctx.scale(2,2);
-const w = containerWidth;
-const h = 280;
-ctx.clearRect(0,0,w,h);
+canvas.width = containerWidth;
+canvas.height = 280;
+ctx.clearRect(0,0,canvas.width,canvas.height);
 const validRecords = records.filter(r=>!isNaN(parseFloat(r.weight)) && !isNaN(parseFloat(r.bodyFat)));
 if(validRecords.length<2){
 ctx.fillStyle="#666";ctx.font="14px system-ui";ctx.textAlign="center";
-ctx.fillText("至少2条打卡记录才会绘制体重&体脂曲线",w/2,h/2);return;
+ctx.fillText("至少2条打卡记录才会绘制体重&体脂曲线",containerWidth/2,140);return;
 }
 const weights = validRecords.map(r=>Number(r.weight));
 const bodyFats = validRecords.map(r=>Number(r.bodyFat));
 const minW = Math.min(...weights)-1;const maxW = Math.max(...weights)+1;
 const minBF = Math.min(...bodyFats)-2;const maxBF = Math.max(...bodyFats)+2;
 const count = validRecords.length;
-const stepX = (w-60)/(count-1);
+const stepX = (containerWidth-60)/(count-1);
 
 //体重蓝色
 ctx.beginPath();ctx.strokeStyle="#3b82f6";ctx.lineWidth=2;
 for(let i=0;i<count;i++){
 const x = 30 + i*stepX;
-const y = 30 + (maxW - weights[i])/(maxW-minW)*(h-60);
+const y = 30 + (maxW - weights[i])/(maxW-minW)*(280-60);
 i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
 }
 ctx.stroke();
@@ -702,7 +699,7 @@ ctx.stroke();
 ctx.beginPath();ctx.strokeStyle="#db2777";ctx.lineWidth=2;
 for(let i=0;i<count;i++){
 const x = 30 + i*stepX;
-const y = 30 + (maxBF - bodyFats[i])/(maxBF-minBF)*(h-60);
+const y = 30 + (maxBF - bodyFats[i])/(maxBF-minBF)*(280-60);
 i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
 }
 ctx.stroke();

@@ -55,6 +55,11 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 .modal-close{float:right;border:none;background:transparent;color:#666;font-size:24px;cursor:pointer}
 /* 自定义食物管理列表 */
 .custom-food-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee}
+.preview-nutri{
+    color:#16a34a;
+    font-weight:500;
+    margin:8px 0;
+}
 </style>
 </head>
 <body>
@@ -238,6 +243,8 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 <input type="number" id="customCarb" placeholder="碳水g" step="0.1">
 <input type="number" id="customFat" placeholder="脂肪g" step="0.1">
 </div>
+<!-- 实时预览区域 -->
+<div id="autoPreview" class="preview-nutri"></div>
 <button onclick="addCustomFood()">保存到我的食物库</button>
 <div id="customFoodTip" class="tip-text"></div>
 </div>
@@ -389,6 +396,21 @@ function renderFoodSelect(){
   })
 }
 
+//【新增】实时预览自定义食物100g营养
+function autoPreviewCustomFood(){
+    const kcal = Number(document.getElementById("customKcal").value);
+    const pro = Number(document.getElementById("customProtein").value);
+    const carb = Number(document.getElementById("customCarb").value);
+    const fat = Number(document.getElementById("customFat").value);
+    const previewBox = document.getElementById("autoPreview");
+
+    if(isNaN(kcal) && isNaN(pro) && isNaN(carb) && isNaN(fat)){
+        previewBox.innerText = "";
+        return;
+    }
+    previewBox.innerText = `✅100g预览：${kcal||0} kcal｜蛋白质 ${pro||0}g｜碳水 ${carb||0}g｜脂肪 ${fat||0}g`;
+}
+
 //添加自定义食物
 function addCustomFood(){
   const name = document.getElementById("customFoodName").value.trim();
@@ -413,12 +435,13 @@ function addCustomFood(){
   renderFoodSelect();
   renderCustomFoodList();
   document.getElementById("customFoodTip").innerText=`✅【${name}】已存入食物库，下拉框可以直接选择！`;
-  //清空输入框
+  //清空输入框 + 清空预览
   document.getElementById("customFoodName").value="";
   document.getElementById("customKcal").value="";
   document.getElementById("customProtein").value="";
   document.getElementById("customCarb").value="";
   document.getElementById("customFat").value="";
+  document.getElementById("autoPreview").innerText="";
 }
 //渲染自定义食物列表，支持删除
 function renderCustomFoodList(){
@@ -795,6 +818,18 @@ function clearAllLog(){
 if(confirm('确定删除全部打卡记录？无法恢复！')){records=[];localStorage.removeItem('fatLog');render();}
 }
 document.getElementById("bfFormula").addEventListener("change",toggleNavyInputs);
+
+//绑定自定义食物输入框，输入实时触发预览
+const customInputs = [
+    document.getElementById("customKcal"),
+    document.getElementById("customProtein"),
+    document.getElementById("customCarb"),
+    document.getElementById("customFat")
+];
+customInputs.forEach(inp=>{
+    inp.addEventListener('input',autoPreviewCustomFood);
+})
+
 window.addEventListener('resize',()=>{setTimeout(drawChart,100);});
 render();
 renderFoodSelect();

@@ -2,43 +2,66 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>减脂打卡｜105→95→80→70kg</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>减脂打卡｜自定义身高体重</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="减脂打卡">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏋️</text></svg>">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
-body{padding:16px;background:#f7f8fa;color:#222;max-width:480px;margin:0 auto}
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px #00000012}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
+html,body{padding:12px;background:#f7f8fa;color:#222;max-width:100%;min-height:100vh}
+body{max-width:480px;margin:0 auto}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px #00000012;width:100%}
 h2{font-size:18px;margin-bottom:10px}
 h3{font-size:16px;margin:8px 0}
-button{padding:8px 12px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:14px;margin:4px;cursor:pointer}
+button{padding:9px 10px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:14px;margin:4px;cursor:pointer;min-height:40px}
 button.gray{background:#9ca3af}
 button.green{background:#10b981}
+button.orange{background:#f97316}
 input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;font-size:16px}
-.check-item{display:flex;align-items:center;gap:8px;padding:6px 0}
-.progress{height:12px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin:8px 0}
+.check-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px}
+.progress{height:12px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin:8px 0;width:100%}
 .progress>div{height:100%;background:#3b82f6;width:0%}
-.log-item{padding:8px;border-bottom:1px solid #eee;font-size:14px}
+.log-item{padding:8px;border-bottom:1px solid #eee;font-size:13px;word-break:break-all}
 .tab-group{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
-canvas{width:100%;height:220px;margin-top:8px}
-.countdown{background:#fef3c7;color:#92400e;padding:10px;border-radius:8px;margin:8px 0;font-weight:bold}
+canvas{width:100%;height:220px;margin-top:8px;border-radius:8px}
+.countdown{background:#fef3c7;color:#92400e;padding:10px;border-radius:8px;margin:8px 0;font-weight:bold;font-size:14px}
+.set-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.bmi-text{color:#2563eb;font-weight:bold;margin:6px 0;font-size:14px}
 </style>
 </head>
 <body>
+<!-- 【这个就是你找不到的身高体重模块，在页面最顶部！】 -->
 <div class="card">
-<h2>🎯 减脂总目标：105kg → 70kg</h2>
+<h2>⚙️ 基础信息（随时修改）</h2>
+<div class="set-row">
+<div>
+<label>身高 cm</label>
+<input type="number" id="height" placeholder="例如 175" step="1">
+</div>
+<div>
+<label>起始体重 kg</label>
+<input type="number" id="startWeight" placeholder="例如105" step="0.1">
+</div>
+</div>
+<label>目标体重 kg</label>
+<input type="number" id="targetWeight" placeholder="例如70" step="0.1">
+<button class="orange" onclick="saveBaseInfo()">保存基础信息，重新计算</button>
+<p class="bmi-text" id="bmiBox"></p>
+</div>
+
+<div class="card">
+<h2>🎯 减脂目标</h2>
 <div id="stageInfo"></div>
 <div class="countdown" id="cheatCountdown"></div>
 <div class="progress"><div id="progressBar"></div></div>
 <p id="progressText"></p>
 <div class="tab-group">
-<button onclick="switchStage(1)">阶段① 105→95kg</button>
-<button onclick="switchStage(2)">阶段② 95→80kg</button>
-<button onclick="switchStage(3)">阶段③ 80→70kg</button>
-<button onclick="switchStage(4)">可选70→60kg</button>
+<button onclick="switchStage(1)">阶段①</button>
+<button onclick="switchStage(2)">阶段②</button>
+<button onclick="switchStage(3)">阶段③</button>
+<button onclick="switchStage(4)">可选冲刺</button>
 </div>
 </div>
 
@@ -86,7 +109,7 @@ canvas{width:100%;height:220px;margin-top:8px}
 <script>
 //阶段配置，放纵餐周期 days
 const stages = {
-1:{name:"阶段①：105 → 95kg",target:95,start:105,cheatCycle:14,desc:`
+1:{name:"阶段①：减脂前期",cheatCycle:14,desc:`
 ✅热量：1400～1550大卡<br>
 ✅晚餐：不饿不吃；心慌胃痛吃兜底餐（蛋/黄瓜/豆腐）<br>
 ✅放纵餐：2周1次自助（中午吃，7分饱）<br>
@@ -96,7 +119,7 @@ const stages = {
 5min拉伸<br>
 ✅蛋白≥110g/天；每周1次早空腹称重
 `},
-2:{name:"阶段②：95 → 80kg",target:80,start:95,cheatCycle:21,desc:`
+2:{name:"阶段②：减脂中期",cheatCycle:21,desc:`
 ✅热量：1350～1500大卡<br>
 ✅晚餐：每天固定少量蛋白+蔬菜（100~200kcal）<br>
 ✅放纵餐：3周1次自助<br>
@@ -105,7 +128,7 @@ const stages = {
 休息日平地慢走40分钟<br>
 ✅蛋白≥100g/天
 `},
-3:{name:"阶段③：80 → 70kg",target:70,start:80,cheatCycle:28,desc:`
+3:{name:"阶段③：减脂后期",cheatCycle:28,desc:`
 ✅热量：1300～1450大卡<br>
 ✅三餐全部正常吃，午餐主食2/3份<br>
 ✅晚餐：蛋白+蔬菜150~220大卡<br>
@@ -115,7 +138,7 @@ const stages = {
 每周额外2次快走40分钟<br>
 ✅蛋白≥90g/天
 `},
-4:{name:"可选冲刺：70 → 60kg",target:60,start:70,cheatCycle:28,desc:`
+4:{name:"可选冲刺：精细化减脂",cheatCycle:28,desc:`
 ✅温和缺口300大卡，力量训练不能停<br>
 ✅完整三餐，严控油脂<br>
 ✅放纵餐最多4周1次<br>
@@ -125,15 +148,46 @@ const stages = {
 
 let currentStage = 1;
 let records = JSON.parse(localStorage.getItem('fatLog')) || [];
+//基础信息 本地持久存储
+let baseInfo = JSON.parse(localStorage.getItem('fatBaseInfo')) || {
+    height:175,
+    startWeight:105,
+    targetWeight:70
+};
 
-//绘制体重曲线
+//保存基础信息
+function saveBaseInfo(){
+    const h = parseFloat(document.getElementById('height').value);
+    const sw = parseFloat(document.getElementById('startWeight').value);
+    const tw = parseFloat(document.getElementById('targetWeight').value);
+    if(isNaN(h)||isNaN(sw)||isNaN(tw)){
+        alert('身高、起始体重、目标体重不能为空');
+        return;
+    }
+    baseInfo.height = h;
+    baseInfo.startWeight = sw;
+    baseInfo.targetWeight = tw;
+    localStorage.setItem('fatBaseInfo',JSON.stringify(baseInfo));
+    alert('基础信息已更新，页面已重新计算进度！');
+    render();
+}
+
+//BMI计算
+function calcBMI(weight,heightCm){
+    const hM = heightCm / 100;
+    return (weight/(hM*hM)).toFixed(1);
+}
+
+//绘制体重曲线（自适应画布）
 function drawChart(){
     const canvas = document.getElementById('chartCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth * 2;
+    // 自适应宽高
+    const containerWidth = canvas.offsetWidth;
+    canvas.width = containerWidth * 2;
     canvas.height = 440;
     ctx.scale(2,2);
-    const w = canvas.offsetWidth;
+    const w = containerWidth;
     const h = 220;
     ctx.clearRect(0,0,w,h);
     const weightRecords = records.filter(r=>!isNaN(parseFloat(r.weight)));
@@ -195,17 +249,27 @@ function renderCheatCountdown(){
 }
 
 function render(){
+    //回填基础信息输入框
+    document.getElementById('height').value = baseInfo.height;
+    document.getElementById('startWeight').value = baseInfo.startWeight;
+    document.getElementById('targetWeight').value = baseInfo.targetWeight;
+
     const s = stages[currentStage];
     document.getElementById('stageInfo').innerText = s.name;
     document.getElementById('ruleBox').innerHTML = s.desc;
     renderCheatCountdown();
+
+    const lastW = records.length ? records[records.length-1].weight : baseInfo.startWeight;
+    //计算BMI
+    const bmi = calcBMI(lastW, baseInfo.height);
+    document.getElementById('bmiBox').innerText = `当前BMI：${bmi}`;
+
     //进度
-    const lastW = records.length ? records[records.length-1].weight : 105;
-    const totalReduce = s.start - s.target;
-    const doneReduce = s.start - lastW;
-    const pct = Math.max(0,Math.min(100, doneReduce/totalReduce*100)).toFixed(1);
+    const totalReduce = baseInfo.startWeight - baseInfo.targetWeight;
+    const doneReduce = baseInfo.startWeight - lastW;
+    const pct = totalReduce <= 0 ? 0 : Math.max(0,Math.min(100, doneReduce/totalReduce*100)).toFixed(1);
     document.getElementById('progressBar').style.width = pct+'%';
-    document.getElementById('progressText').innerText=`当前${lastW}kg，目标${s.target}kg，进度${pct}%`;
+    document.getElementById('progressText').innerText=`当前${lastW}kg，目标${baseInfo.targetWeight}kg，总减重进度${pct}%`;
     //日志
     document.getElementById('logBox').innerHTML = records.slice(-10).reverse().map(r=>`
 <div class="log-item">${r.date}｜体重${r.weight}kg｜饮食${r.food?'✅':'❌'}｜训练${r.train?'✅':'❌'}｜自助${r.cheat?'🍖':'❌'}</div>`).join('');
@@ -241,7 +305,10 @@ function clearAllLog(){
         records=[];localStorage.removeItem('fatLog');render();
     }
 }
-window.addEventListener('resize',drawChart);
+//窗口大小改变时，重绘图表
+window.addEventListener('resize',()=>{
+    setTimeout(drawChart,100);
+});
 render();
 </script>
 </body>

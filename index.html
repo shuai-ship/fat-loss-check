@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>减脂打卡｜土豆+鸡胸肉食谱+食物热量计算器</title>
+<title>减脂打卡工具</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="减脂打卡">
@@ -12,157 +12,64 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
 html,body{padding:12px;background:#f7f8fa;color:#222;max-width:100%;min-height:100vh}
 body{max-width:480px;margin:0 auto}
-.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px #00000012;width:100%}
-h2{font-size:18px;margin-bottom:10px}
+
+/* Tab导航样式 */
+.tab-nav{display:flex;gap:4px;margin-bottom:12px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 4px #00000012}
+.tab-btn{flex:1;padding:12px 6px;border:none;border-radius:10px;background:transparent;font-size:14px;font-weight:500;cursor:pointer;transition:0.2s}
+.tab-btn.active{background:#3b82f6;color:#fff}
+
+/* 卡片通用 */
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px #00000012;width:100%}
+h2{font-size:18px;margin-bottom:12px}
 h3{font-size:16px;margin:8px 0}
-button{padding:9px 10px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:14px;margin:4px;cursor:pointer;min-height:40px}
+button{padding:10px 12px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:14px;margin:4px;cursor:pointer;min-height:42px}
 button.gray{background:#9ca3af}
 button.green{background:#10b981}
 button.orange{background:#f97316}
 input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;font-size:16px}
-select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;font-size:16px;background:#fff}
-.check-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px}
-.progress{height:12px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin:8px 0;width:100%}
+select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;font-size:14px;background:#fff}
+/* 缩小下拉选项字体，适配手机 */
+#bfFormula{font-size:13px;}
+.check-item{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:14px}
+.progress{height:12px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin:10px 0;width:100%}
 .progress>div{height:100%;background:#3b82f6;width:0%}
 .log-item{padding:8px;border-bottom:1px solid #eee;font-size:13px;word-break:break-all}
-.tab-group{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.tab-content{display:none}
+.tab-content.active{display:block}
 canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
-.countdown{background:#fef3c7;color:#92400e;padding:10px;border-radius:8px;margin:8px 0;font-weight:bold;font-size:14px}
-.set-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.countdown{background:#fef3c7;color:#92400e;padding:12px;border-radius:8px;margin:8px 0;font-weight:bold;font-size:14px}
+.set-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
 .bmi-text{color:#2563eb;font-weight:bold;margin:6px 0;font-size:14px}
 .bodyfat-text{color:#db2777;font-weight:bold;margin:6px 0;font-size:14px}
-.nutri-text{color:#222;font-size:14px;margin:4px 0;line-height:1.5}
-.recipe-box{background:#f0fdf4;padding:10px;border-radius:8px;margin-top:8px;font-size:14px;line-height:1.6}
+.nutri-text{color:#222;font-size:14px;margin:6px 0;line-height:1.5}
+.recipe-box{background:#f0fdf4;padding:12px;border-radius:8px;margin-top:10px;font-size:14px;line-height:1.6}
 .hidden{display:none;}
-.tip-text{color:#666;font-size:13px;}
+.tip-text{color:#666;font-size:13px;line-height:1.4}
+.food-list-item{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #f1f1f1;font-size:14px}
+.food-summary{background:#eff6ff;padding:12px;border-radius:8px;margin:10px 0;line-height:1.6}
 </style>
 </head>
 <body>
-<div class="card">
-<h2>⚙️ 基础信息（随时修改）</h2>
-<div class="set-row">
-<div>
-<label>性别</label>
-<select id="gender">
-<option value="male">男</option>
-<option value="female">女</option>
-</select>
-</div>
-<div>
-<label>体脂计算公式</label>
-<select id="bfFormula">
-<option value="navy">美国海军公式（精度高，女生需臀围）</option>
-<option value="deurenberg">Deurenberg简易公式（无需臀围颈围，仅年龄身高体重）</option>
-</select>
-</div>
-</div>
-<div class="set-row">
-<div>
-<label>年龄</label>
-<input type="number" id="age" placeholder="28" step="1">
-</div>
-<div>
-<label>身高 cm</label>
-<input type="number" id="height" placeholder="例如 175" step="1">
-</div>
-</div>
-<div id="navyInputs">
-<div class="set-row">
-<div>
-<label>颈围 cm</label>
-<input type="number" id="neck" placeholder="例如38" step="0.1">
-</div>
-<div>
-<label>腰围 cm</label>
-<input type="number" id="waist" placeholder="例如85" step="0.1">
-</div>
-</div>
-<div class="set-row">
-<div>
-<label>臀围 cm（女性海军公式必填）</label>
-<input type="number" id="hip" placeholder="例如98" step="0.1">
-</div>
-<div>
-<label>起始体重 kg</label>
-<input type="number" id="startWeight" placeholder="例如105" step="0.1">
-</div>
-</div>
-</div>
-<div>
-<label>目标体重 kg</label>
-<input type="number" id="targetWeight" placeholder="例如70" step="0.1">
-</div>
-<div class="tip-text">
-💡简易公式提示：不知道臀围的女生推荐选【Deurenberg】，只需要年龄身高体重，估算精度略低
-</div>
-<button class="orange" onclick="saveBaseInfo()">保存基础信息，重新计算</button>
-<p class="bmi-text" id="bmiBox"></p>
-<p class="bodyfat-text" id="bodyFatBox"></p>
+<!-- Tab导航 -->
+<div class="tab-nav">
+<button class="tab-btn active" onclick="switchTab(0)">📌 打卡首页</button>
+<button class="tab-btn" onclick="switchTab(1)">⚙️ 基础设置</button>
+<button class="tab-btn" onclick="switchTab(2)">🍽️ 食物&食谱</button>
 </div>
 
-<div class="card">
-<h2>🍽️ 食物热量计算器</h2>
-<div class="set-row">
-<div>
-<label>选择食物</label>
-<select id="foodSelect">
-<option value="chickenBreast">鸡胸肉(生)</option>
-<option value="potato">土豆(生)</option>
-<option value="eggWhole">全鸡蛋</option>
-<option value="broccoli">西兰花</option>
-<option value="lettuce">生菜</option>
-<option value="cucumber">黄瓜</option>
-<option value="tomato">番茄</option>
-<option value="brownRice">糙米(生)</option>
-<option value="beefLean">瘦牛肉(生)</option>
-<option value="shrimp">大虾(生)</option>
-</select>
-</div>
-<div>
-<label>食物克数(g)</label>
-<input type="number" id="foodGram" placeholder="100" value="100" step="1">
-</div>
-</div>
-<button class="green" onclick="calcFoodNutrition()">计算营养</button>
-<div class="nutri-text" id="foodResult"></div>
-</div>
-
-<div class="card">
-<h2>📋 自动生成减脂食谱</h2>
-<div class="set-row">
-<div>
-<label>活动量</label>
-<select id="activityLevel">
-<option value="1.2">久坐几乎不运动</option>
-<option value="1.375">轻度运动 1-3次/周</option>
-<option value="1.55">中度运动 3-5次/周</option>
-<option value="1.725">高强度运动 6-7次/周</option>
-</select>
-</div>
-<div>
-<label>食谱方案</label>
-<select id="recipeType">
-<option value="planA">方案A：土豆+鸡胸</option>
-<option value="planB">方案B：糙米+瘦牛肉</option>
-<option value="planC">方案C：红薯+鱼虾</option>
-</select>
-</div>
-</div>
-<button class="green" onclick="generateRecipe()">生成食谱</button>
-<div class="recipe-box" id="recipeResult"></div>
-</div>
-
+<!-- Tab0：打卡首页 -->
+<div id="tab0" class="tab-content active">
 <div class="card">
 <h2>🎯 减脂目标</h2>
 <div id="stageInfo"></div>
 <div class="countdown" id="cheatCountdown"></div>
 <div class="progress"><div id="progressBar"></div></div>
 <p id="progressText"></p>
-<div class="tab-group">
+<div class="set-row">
 <button onclick="switchStage(1)">阶段①</button>
 <button onclick="switchStage(2)">阶段②</button>
 <button onclick="switchStage(3)">阶段③</button>
-<button onclick="switchStage(4)">可选冲刺</button>
+<button onclick="switchStage(4)">冲刺阶段</button>
 </div>
 </div>
 
@@ -202,24 +109,171 @@ canvas{width:100%;height:280px;margin-top:8px;border-radius:8px;background:#fff}
 </div>
 
 <div class="card">
-<h3>📜 历史记录</h3>
+<h3>📜 历史打卡记录</h3>
 <div id="logBox"></div>
 <button class="gray" onclick="clearAllLog()">清空全部记录（谨慎！）</button>
 </div>
+</div>
+
+<!-- Tab1：基础设置 个人信息、体脂公式 -->
+<div id="tab1" class="tab-content">
+<div class="card">
+<h2>⚙️ 个人基础信息 & 体脂公式</h2>
+<div class="set-row">
+<div>
+<label>性别</label>
+<select id="gender">
+<option value="male">男</option>
+<option value="female">女</option>
+</select>
+</div>
+<div>
+<label>体脂计算公式</label>
+<select id="bfFormula">
+<option value="navy">美国海军公式（精度高，女生需臀围）</option>
+<option value="deurenberg">Deurenberg简易公式（无需臀围颈围）</option>
+</select>
+</div>
+</div>
+<div class="set-row">
+<div>
+<label>年龄</label>
+<input type="number" id="age" placeholder="28" step="1">
+</div>
+<div>
+<label>身高 cm</label>
+<input type="number" id="height" placeholder="162" step="1">
+</div>
+</div>
+<div id="navyInputs">
+<div class="set-row">
+<div>
+<label>颈围 cm</label>
+<input type="number" id="neck" placeholder="32" step="0.1">
+</div>
+<div>
+<label>腰围 cm</label>
+<input type="number" id="waist" placeholder="70" step="0.1">
+</div>
+</div>
+<div class="set-row">
+<div>
+<label>臀围 cm（女生海军公式必填）</label>
+<input type="number" id="hip" placeholder="92" step="0.1">
+</div>
+<div>
+<label>起始体重 kg</label>
+<input type="number" id="startWeight" placeholder="65" step="0.1">
+</div>
+</div>
+</div>
+<div>
+<label>目标体重 kg</label>
+<input type="number" id="targetWeight" placeholder="52" step="0.1">
+</div>
+<p class="tip-text">💡简易公式：不知道臀围的女生推荐选择，仅需要年龄、身高、体重，估算精度略低</p>
+<button class="orange" onclick="saveBaseInfo()">保存基础信息</button>
+<p class="bmi-text" id="bmiBox"></p>
+<p class="bodyfat-text" id="bodyFatBox"></p>
+</div>
+</div>
+
+<!-- Tab2：食物&食谱｜新增今日食物录入+全天汇总 -->
+<div id="tab2" class="tab-content">
+<div class="card">
+<h2>🍽️ 食物热量计算器</h2>
+<div class="set-row">
+<div>
+<label>选择食物</label>
+<select id="foodSelect">
+<option value="chickenBreast">鸡胸肉(生)</option>
+<option value="potato">土豆(生)</option>
+<option value="eggWhole">全鸡蛋</option>
+<option value="eggWhite">蛋清</option>
+<option value="broccoli">西兰花</option>
+<option value="lettuce">生菜</option>
+<option value="cucumber">黄瓜</option>
+<option value="tomato">番茄</option>
+<option value="brownRice">糙米(生)</option>
+<option value="sweetPotato">红薯(生)</option>
+<option value="beefLean">瘦牛肉(生)</option>
+<option value="shrimp">大虾(生)</option>
+<option value="cod">鳕鱼</option>
+<option value="oatRaw">燕麦（干）</option>
+<option value="greekYogurt">无糖希腊酸奶</option>
+<option value="oliveOil">橄榄油</option>
+<option value="mushroom">香菇</option>
+<option value="spinach">菠菜</option>
+<option value="apple">苹果</option>
+<option value="banana">香蕉</option>
+</select>
+</div>
+<div>
+<label>食物克数(g)</label>
+<input type="number" id="foodGram" placeholder="100" value="100" step="1">
+</div>
+</div>
+<button class="green" onclick="calcFoodNutrition()">计算营养</button>
+<button onclick="addFoodToToday()">➕ 添加到今日食物清单</button>
+<div class="nutri-text" id="foodResult"></div>
+</div>
+
+<div class="card">
+<h3>📝 今日食物录入清单</h3>
+<div id="todayFoodList"></div>
+<div class="food-summary" id="foodTotalSummary"></div>
+<button class="gray" onclick="clearTodayFood()">清空今日食物</button>
+</div>
+
+<div class="card">
+<h2>📋 自动生成减脂食谱</h2>
+<div class="set-row">
+<div>
+<label>活动量</label>
+<select id="activityLevel">
+<option value="1.2">久坐几乎不运动</option>
+<option value="1.375">轻度运动 1-3次/周</option>
+<option value="1.55">中度运动 3-5次/周</option>
+<option value="1.725">高强度运动 6-7次/周</option>
+</select>
+</div>
+<div>
+<label>食谱方案</label>
+<select id="recipeType">
+<option value="planA">方案A：土豆+鸡胸</option>
+<option value="planB">方案B：糙米+瘦牛肉</option>
+<option value="planC">方案C：红薯+鱼虾</option>
+</select>
+</div>
+</div>
+<button class="green" onclick="generateRecipe()">生成食谱</button>
+<div class="recipe-box" id="recipeResult"></div>
+</div>
+</div>
 
 <script>
-//食物营养数据库（每100g）
+//食物营养数据库【扩充】每100g
 const foodDB = {
 chickenBreast:{name:"鸡胸肉(生)",kcal:110,protein:23,carb:0,fat:1},
 potato:{name:"土豆(生)",kcal:77,protein:2,carb:17,fat:0.1},
 eggWhole:{name:"全鸡蛋",kcal:143,protein:13,carb:1,fat:10},
+eggWhite:{name:"蛋清",kcal:60,protein:11,carb:1,fat:0.1},
 broccoli:{name:"西兰花",kcal:34,protein:2.8,carb:6,fat:0.4},
 lettuce:{name:"生菜",kcal:16,protein:1,carb:2.3,fat:0.2},
 cucumber:{name:"黄瓜",kcal:16,protein:0.6,carb:3,fat:0.2},
 tomato:{name:"番茄",kcal:18,protein:0.9,carb:3.9,fat:0.2},
 brownRice:{name:"糙米(生)",kcal:345,protein:7,carb:77,fat:2.8},
+sweetPotato:{name:"红薯(生)",kcal:86,protein:1.6,carb:20,fat:0.1},
 beefLean:{name:"瘦牛肉(生)",kcal:125,protein:22,carb:0,fat:4},
-shrimp:{name:"大虾(生)",kcal:85,protein:20,carb:0,fat:0.2}
+shrimp:{name:"大虾(生)",kcal:85,protein:20,carb:0,fat:0.2},
+cod:{name:"鳕鱼",kcal:82,protein:18,carb:0,fat:1},
+oatRaw:{name:"燕麦（干）",kcal:389,protein:13,carb:66,fat:7},
+greekYogurt:{name:"无糖希腊酸奶",kcal:70,protein:10,carb:3,fat:0},
+oliveOil:{name:"橄榄油",kcal:898,protein:0,carb:0,fat:99.8},
+mushroom:{name:"香菇",kcal:26,protein:2.2,carb:4.1,fat:0.3},
+spinach:{name:"菠菜",kcal:28,protein:2.9,carb:3.6,fat:0.4},
+apple:{name:"苹果",kcal:52,protein:0.3,carb:14,fat:0.2},
+banana:{name:"香蕉",kcal:91,protein:1.1,carb:23,fat:0.3}
 };
 
 const stages = {
@@ -271,8 +325,20 @@ hip:92,
 startWeight:65,
 targetWeight:52
 };
+//今日食物清单本地存储
+let todayFoodList = JSON.parse(localStorage.getItem('todayFoodList')) || [];
 
-//切换公式时，自动显示隐藏海军公式输入项
+//标签页切换
+function switchTab(idx){
+document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+document.getElementById(`tab${idx}`).classList.add('active');
+document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+if(idx===0) setTimeout(drawChart,50);
+if(idx===2) renderTodayFood();
+}
+
+//切换海军公式输入项显隐
 function toggleNavyInputs(){
 const formula = document.getElementById("bfFormula").value;
 const navyWrap = document.getElementById("navyInputs");
@@ -295,6 +361,61 @@ const pro = (f.protein * ratio).toFixed(1);
 const carb = (f.carb * ratio).toFixed(1);
 const fat = (f.fat * ratio).toFixed(1);
 document.getElementById("foodResult").innerText = `${f.name} ${gram}g｜热量:${kcal}kcal｜蛋白质:${pro}g｜碳水:${carb}g｜脂肪:${fat}g`;
+}
+
+//添加食物到今日清单
+function addFoodToToday(){
+const foodKey = document.getElementById("foodSelect").value;
+const gram = Number(document.getElementById("foodGram").value);
+if(isNaN(gram)||gram<=0){alert("请输入有效克数");return;}
+const f = foodDB[foodKey];
+const ratio = gram / 100;
+const item = {
+key:foodKey,
+name:f.name,
+gram:gram,
+kcal:Number((f.kcal * ratio).toFixed(1)),
+protein:Number((f.protein * ratio).toFixed(1)),
+carb:Number((f.carb * ratio).toFixed(1)),
+fat:Number((f.fat * ratio).toFixed(1))
+};
+todayFoodList.push(item);
+localStorage.setItem('todayFoodList',JSON.stringify(todayFoodList));
+renderTodayFood();
+}
+
+//渲染今日食物列表 + 全天汇总
+function renderTodayFood(){
+const box = document.getElementById('todayFoodList');
+let html = "";
+let totalKcal=0,totalPro=0,totalCarb=0,totalFat=0;
+todayFoodList.forEach((item,idx)=>{
+html += `<div class="food-list-item">
+<span>${item.name} ${item.gram}g ｜ ${item.kcal}kcal 蛋白${item.protein}g</span>
+<button style="padding:4px 6px;min-height:30px" onclick="delFoodItem(${idx})">删除</button>
+</div>`;
+totalKcal += item.kcal;
+totalPro += item.protein;
+totalCarb += item.carb;
+totalFat += item.fat;
+})
+box.innerHTML = html || "<p>暂无食物，添加食材记录今日饮食</p>";
+document.getElementById('foodTotalSummary').innerHTML =
+`<b>🍱今日全天汇总</b><br>总热量：${totalKcal.toFixed(1)} kcal<br>蛋白质：${totalPro.toFixed(1)} g<br>碳水：${totalCarb.toFixed(1)} g<br>脂肪：${totalFat.toFixed(1)} g`;
+}
+//删除单条食物
+function delFoodItem(index){
+todayFoodList.splice(index,1);
+localStorage.setItem('todayFoodList',JSON.stringify(todayFoodList));
+renderTodayFood();
+}
+//清空今日食物
+function clearTodayFood(){
+if(confirm("清空今日全部食物记录？")){
+todayFoodList=[];
+localStorage.removeItem('todayFoodList');
+renderTodayFood();
+}
 }
 
 //自动生成食谱
@@ -345,7 +466,7 @@ alert("女生选择海军公式，臀围必须填写");return;
 }
 }
 localStorage.setItem('fatBaseInfo',JSON.stringify(baseInfo));
-alert('基础信息已更新，页面已重新计算！');render();
+alert('基础信息已更新！');render();
 }
 
 //BMI计算
@@ -353,7 +474,7 @@ function calcBMI(weight,heightCm){
 const hM = heightCm / 100;return (weight/(hM*hM)).toFixed(1);
 }
 
-//体脂计算 两套公式
+//体脂计算两套公式
 function calcBodyFat(gender, formula, age, heightCm, weight, waistCm, neckCm, hipCm){
 if(formula === "navy"){
 let bf;
@@ -378,6 +499,7 @@ return bf.toFixed(1);
 //双曲线绘图：体重+体脂
 function drawChart(){
 const canvas = document.getElementById('chartCanvas');
+if(!canvas) return;
 const ctx = canvas.getContext('2d');
 const containerWidth = canvas.offsetWidth;
 canvas.width = containerWidth * 2;
@@ -391,18 +513,14 @@ if(validRecords.length<2){
 ctx.fillStyle="#666";ctx.font="14px system-ui";ctx.textAlign="center";
 ctx.fillText("至少2条打卡记录才会绘制体重&体脂曲线",w/2,h/2);return;
 }
-//提取数据
-const dates = validRecords.map(r=>r.date);
 const weights = validRecords.map(r=>Number(r.weight));
 const bodyFats = validRecords.map(r=>Number(r.bodyFat));
-//体重Y轴
 const minW = Math.min(...weights)-1;const maxW = Math.max(...weights)+1;
-//体脂Y轴
 const minBF = Math.min(...bodyFats)-2;const maxBF = Math.max(...bodyFats)+2;
 const count = validRecords.length;
 const stepX = (w-60)/(count-1);
 
-//绘制体重曲线蓝色
+//体重蓝色
 ctx.beginPath();ctx.strokeStyle="#3b82f6";ctx.lineWidth=2;
 for(let i=0;i<count;i++){
 const x = 30 + i*stepX;
@@ -410,8 +528,7 @@ const y = 30 + (maxW - weights[i])/(maxW-minW)*(h-60);
 i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
 }
 ctx.stroke();
-
-//绘制体脂曲线玫红
+//体脂玫红
 ctx.beginPath();ctx.strokeStyle="#db2777";ctx.lineWidth=2;
 for(let i=0;i<count;i++){
 const x = 30 + i*stepX;
@@ -419,8 +536,6 @@ const y = 30 + (maxBF - bodyFats[i])/(maxBF-minBF)*(h-60);
 i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
 }
 ctx.stroke();
-
-//坐标文字
 ctx.fillStyle="#333";ctx.font="10px system-ui";
 ctx.fillText("体重(kg)",10,40);
 ctx.fillStyle="#db2777";
@@ -457,7 +572,6 @@ document.getElementById('startWeight').value = baseInfo.startWeight;
 document.getElementById('targetWeight').value = baseInfo.targetWeight;
 
 toggleNavyInputs();
-
 const s = stages[currentStage];
 document.getElementById('stageInfo').innerText = s.name;
 document.getElementById('ruleBox').innerHTML = s.desc;
@@ -476,7 +590,6 @@ document.getElementById('progressBar').style.width = pct+'%';
 document.getElementById('progressText').innerText=`当前${lastW}kg，目标${baseInfo.targetWeight}kg，总减重进度${pct}%`;
 document.getElementById('logBox').innerHTML = records.slice(-10).reverse().map(r=>`
 <div class="log-item">${r.date}｜体重${r.weight}kg｜估算体脂${r.bodyFat}%｜早餐${r.food?'✅':'❌'}｜训练${r.train?'✅':'❌'}｜自助${r.cheat?'🍖':'❌'}</div>`).join('');
-drawChart();
 }
 function switchStage(n){currentStage=n;render();}
 function saveToday(){
@@ -498,10 +611,10 @@ document.getElementById('weightToday').value='';
 function clearAllLog(){
 if(confirm('确定删除全部打卡记录？无法恢复！')){records=[];localStorage.removeItem('fatLog');render();}
 }
-//监听公式下拉切换，实时切换输入框显示隐藏
 document.getElementById("bfFormula").addEventListener("change",toggleNavyInputs);
 window.addEventListener('resize',()=>{setTimeout(drawChart,100);});
 render();
+renderTodayFood();
 </script>
 </body>
 </html>

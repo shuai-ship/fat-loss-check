@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>减脂打卡｜105→95→80→70kg</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="减脂打卡">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏋️</text></svg>">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
+body{padding:16px;background:#f7f8fa;color:#222;max-width:480px;margin:0 auto}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px #00000012}
+h2{font-size:18px;margin-bottom:10px}
+h3{font-size:16px;margin:8px 0}
+button{padding:8px 12px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:14px;margin:4px;cursor:pointer}
+button.gray{background:#9ca3af}
+button.green{background:#10b981}
+input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;font-size:16px}
+.check-item{display:flex;align-items:center;gap:8px;padding:6px 0}
+.progress{height:12px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin:8px 0}
+.progress>div{height:100%;background:#3b82f6;width:0%}
+.log-item{padding:8px;border-bottom:1px solid #eee;font-size:14px}
+.tab-group{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+canvas{width:100%;height:220px;margin-top:8px}
+.countdown{background:#fef3c7;color:#92400e;padding:10px;border-radius:8px;margin:8px 0;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>🎯 减脂总目标：105kg → 70kg</h2>
+<div id="stageInfo"></div>
+<div class="countdown" id="cheatCountdown"></div>
+<div class="progress"><div id="progressBar"></div></div>
+<p id="progressText"></p>
+<div class="tab-group">
+<button onclick="switchStage(1)">阶段① 105→95kg</button>
+<button onclick="switchStage(2)">阶段② 95→80kg</button>
+<button onclick="switchStage(3)">阶段③ 80→70kg</button>
+<button onclick="switchStage(4)">可选70→60kg</button>
+</div>
+</div>
+
+<div class="card">
+<h3>📅 今日打卡</h3>
+<div class="check-item">
+<input type="checkbox" id="chkBreakfast"><label for="chkBreakfast">早餐达标（燕麦/红薯+鸡蛋）</label>
+</div>
+<div class="check-item">
+<input type="checkbox" id="chkLunch"><label for="chkLunch">午餐达标｜蛋白+双青菜+半份主食</label>
+</div>
+<div class="check-item">
+<input type="checkbox" id="chkDinner"><label for="chkDinner">晚餐：不饿不吃 / 兜底轻食</label>
+</div>
+<div class="check-item">
+<input type="checkbox" id="chkWater"><label for="chkWater">饮水≥2000ml</label>
+</div>
+<div class="check-item">
+<input type="checkbox" id="chkTrain"><label for="chkTrain">居家力量训练完成</label>
+</div>
+<div class="check-item">
+<input type="checkbox" id="chkCheat"><label for="chkCheat">✅放纵餐（东盛自助）</label>
+</div>
+<input type="number" id="weightToday" placeholder="今日空腹体重(kg)" step="0.1">
+<button class="green" onclick="saveToday()">保存今日打卡</button>
+<button class="gray" onclick="clearToday()">清空今日</button>
+</div>
+
+<div class="card">
+<h3>📈 体重趋势图</h3>
+<canvas id="chartCanvas"></canvas>
+</div>
+
+<div class="card">
+<h3>📖 当前阶段规则</h3>
+<div id="ruleBox"></div>
+</div>
+
+<div class="card">
+<h3>📜 历史记录</h3>
+<div id="logBox"></div>
+<button class="gray" onclick="clearAllLog()">清空全部记录（谨慎！）</button>
+</div>
+
+<script>
+//阶段配置，放纵餐周期 days
+const stages = {
+1:{name:"阶段①：105 → 95kg",target:95,start:105,cheatCycle:14,desc:`
+✅热量：1400～1550大卡<br>
+✅晚餐：不饿不吃；心慌胃痛吃兜底餐（蛋/黄瓜/豆腐）<br>
+✅放纵餐：2周1次自助（中午吃，7分饱）<br>
+✅训练：每周5练｜周三、周日休息<br>
+5min热身 → 2轮循环：<br>
+靠墙静蹲25~30s｜坐姿抬腿12次｜跪姿俯卧撑6~8次｜臀桥15次｜跪姿平板20s<br>
+5min拉伸<br>
+✅蛋白≥110g/天；每周1次早空腹称重
+`},
+2:{name:"阶段②：95 → 80kg",target:80,start:95,cheatCycle:21,desc:`
+✅热量：1350～1500大卡<br>
+✅晚餐：每天固定少量蛋白+蔬菜（100~200kcal）<br>
+✅放纵餐：3周1次自助<br>
+✅训练：每周5练，25~30min，3轮循环<br>
+靠墙静蹲40s｜坐姿抬腿15次｜跪姿俯卧撑10次｜臀桥20次｜跪姿平板30s<br>
+休息日平地慢走40分钟<br>
+✅蛋白≥100g/天
+`},
+3:{name:"阶段③：80 → 70kg",target:70,start:80,cheatCycle:28,desc:`
+✅热量：1300～1450大卡<br>
+✅三餐全部正常吃，午餐主食2/3份<br>
+✅晚餐：蛋白+蔬菜150~220大卡<br>
+✅放纵餐：4周1次自助，严格7分饱<br>
+✅训练：每周5练30分钟，3轮循环<br>
+靠墙静蹲50s｜坐姿抬腿18次｜跪姿俯卧撑12次｜臀桥22次｜跪姿平板40s<br>
+每周额外2次快走40分钟<br>
+✅蛋白≥90g/天
+`},
+4:{name:"可选冲刺：70 → 60kg",target:60,start:70,cheatCycle:28,desc:`
+✅温和缺口300大卡，力量训练不能停<br>
+✅完整三餐，严控油脂<br>
+✅放纵餐最多4周1次<br>
+⚠️重点监测：睡眠、脱发、疲劳，不适立刻停止
+`}
+};
+
+let currentStage = 1;
+let records = JSON.parse(localStorage.getItem('fatLog')) || [];
+
+//绘制体重曲线
+function drawChart(){
+    const canvas = document.getElementById('chartCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth * 2;
+    canvas.height = 440;
+    ctx.scale(2,2);
+    const w = canvas.offsetWidth;
+    const h = 220;
+    ctx.clearRect(0,0,w,h);
+    const weightRecords = records.filter(r=>!isNaN(parseFloat(r.weight)));
+    if(weightRecords.length<2){
+        ctx.fillStyle="#666";
+        ctx.font="14px system-ui";
+        ctx.textAlign="center";
+        ctx.fillText("至少2条体重记录才会绘制曲线",w/2,h/2);
+        return;
+    }
+    const weights = weightRecords.map(x=>parseFloat(x.weight));
+    const minW = Math.min(...weights)-1;
+    const maxW = Math.max(...weights)+1;
+    //坐标轴
+    ctx.strokeStyle="#ddd";
+    ctx.beginPath();
+    ctx.moveTo(30,20);ctx.lineTo(30,h-30);ctx.lineTo(w-10,h-30);
+    ctx.stroke();
+    //折线
+    ctx.strokeStyle="#3b82f6";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    weightRecords.forEach((rec,i)=>{
+        const x = 30 + (i/(weightRecords.length-1))*(w-40);
+        const y = h-30 - ((parseFloat(rec.weight)-minW)/(maxW-minW))*(h-50);
+        if(i===0) ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    //圆点
+    ctx.fillStyle="#3b82f6";
+    weightRecords.forEach((rec,i)=>{
+        const x = 30 + (i/(weightRecords.length-1))*(w-40);
+        const y = h-30 - ((parseFloat(rec.weight)-minW)/(maxW-minW))*(h-50);
+        ctx.beginPath();
+        ctx.arc(x,y,3,0,Math.PI*2);
+        ctx.fill();
+    })
+}
+
+//放纵餐倒计时
+function renderCheatCountdown(){
+    const s = stages[currentStage];
+    const cheatRecords = records.filter(r=>r.cheat).map(r=>new Date(r.date));
+    if(cheatRecords.length===0){
+        document.getElementById('cheatCountdown').innerText=`🍖放纵餐周期：${s.cheatCycle}天｜还未记录自助，打卡勾选自助后开始倒计时`;
+        return;
+    }
+    const lastCheat = cheatRecords.sort((a,b)=>b-a)[0];
+    const nextCheat = new Date(lastCheat);
+    nextCheat.setDate(nextCheat.getDate()+s.cheatCycle);
+    const now = new Date();
+    const diff = Math.ceil((nextCheat - now)/(1000*3600*24));
+    if(diff<=0){
+        document.getElementById('cheatCountdown').innerText="🍖可以安排自助啦！（记得控制7分饱，中午吃）";
+    }else{
+        document.getElementById('cheatCountdown').innerText=`🍖距离下次东盛自助：还有 ${diff} 天（周期${s.cheatCycle}天）`;
+    }
+}
+
+function render(){
+    const s = stages[currentStage];
+    document.getElementById('stageInfo').innerText = s.name;
+    document.getElementById('ruleBox').innerHTML = s.desc;
+    renderCheatCountdown();
+    //进度
+    const lastW = records.length ? records[records.length-1].weight : 105;
+    const totalReduce = s.start - s.target;
+    const doneReduce = s.start - lastW;
+    const pct = Math.max(0,Math.min(100, doneReduce/totalReduce*100)).toFixed(1);
+    document.getElementById('progressBar').style.width = pct+'%';
+    document.getElementById('progressText').innerText=`当前${lastW}kg，目标${s.target}kg，进度${pct}%`;
+    //日志
+    document.getElementById('logBox').innerHTML = records.slice(-10).reverse().map(r=>`
+<div class="log-item">${r.date}｜体重${r.weight}kg｜饮食${r.food?'✅':'❌'}｜训练${r.train?'✅':'❌'}｜自助${r.cheat?'🍖':'❌'}</div>`).join('');
+    drawChart();
+}
+function switchStage(n){
+    currentStage=n;
+    render();
+}
+function saveToday(){
+    const w = parseFloat(document.getElementById('weightToday').value);
+    if(isNaN(w)){alert('请填写体重');return;}
+    const rec = {
+        date:new Date().toLocaleDateString(),
+        weight:w,
+        food:document.getElementById('chkBreakfast').checked && document.getElementById('chkLunch').checked && document.getElementById('chkDinner').checked,
+        train:document.getElementById('chkTrain').checked,
+        water:document.getElementById('chkWater').checked,
+        cheat:document.getElementById('chkCheat').checked
+    };
+    records.push(rec);
+    localStorage.setItem('fatLog',JSON.stringify(records));
+    alert('打卡保存成功！');
+    clearToday();
+    render();
+}
+function clearToday(){
+    document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
+    document.getElementById('weightToday').value='';
+}
+function clearAllLog(){
+    if(confirm('确定删除全部打卡记录？无法恢复！')){
+        records=[];localStorage.removeItem('fatLog');render();
+    }
+}
+window.addEventListener('resize',drawChart);
+render();
+</script>
+</body>
+</html>

@@ -16,6 +16,7 @@ body{margin:10px;max-width:800px;margin:0 auto;padding:10px;}
 input,select,button{width:100%;padding:8px;margin:6px 0;font-size:16px;}
 button{background:#2277dd;color:#fff;border:none;border-radius:6px;cursor:pointer;}
 button.del{background:#dd3333;}
+button.green{background:#199444;}
 .row{display:flex;gap:8px;}
 .row>input{flex:1;}
 pre{white-space:pre-wrap;}
@@ -72,7 +73,7 @@ small{color:#666;font-size:13px;}
   </div>
 </div>
 
-<!-- ========== 基础设置 tab2【放自动生成计划模块】 ========== -->
+<!-- ========== 基础设置 tab2 ========== -->
 <div id="tab2" class="tab-panel">
   <div class="card">
     <h3>个人基础信息 & 体脂计算</h3>
@@ -107,9 +108,8 @@ small{color:#666;font-size:13px;}
     <small>训练日会自动切换碳水+15g</small>
   </div>
 
-  <!-- ==========【新增：一键生成食谱训练计划模块】========== -->
   <div class="card">
-    <h3>📋 自动生成食谱&训练计划</h3>
+    <h3>📋 自动生成7天食谱+训练计划（按BMI自动匹配）</h3>
     <div>
       <label>性别：</label>
       <select id="genAuto">
@@ -133,12 +133,12 @@ small{color:#666;font-size:13px;}
       <label>活动类型：</label>
       <select id="actAuto">
         <option value="1.3">久坐通勤（几乎不运动）</option>
-        <option value="1.45">通勤+每周3~4次居家力量训练</option>
+        <option value="1.45">通勤+每周规律力量训练</option>
       </select>
     </div>
     <button onclick="calcAutoPlan()" style="margin-top:8px;">一键生成计划</button>
     <div id="planResult" style="margin-top:12px;white-space:pre-line;"></div>
-    <button onclick="applyPlanMacro()" style="background:#199444;margin-top:8px;">应用这套营养素目标</button>
+    <button class="green" onclick="applyPlanMacro()" style="margin-top:8px;">应用这套营养素目标</button>
   </div>
 </div>
 
@@ -168,7 +168,6 @@ small{color:#666;font-size:13px;}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// ========= 全局数据 & 本地存储 =========
 let appData = JSON.parse(localStorage.getItem('fatAppData')) || {
   records:[],
   foodLib:[
@@ -180,14 +179,17 @@ let appData = JSON.parse(localStorage.getItem('fatAppData')) || {
     {name:"烫青菜",kcal:15,pro:1.4,cho:3,fat:0.3},
     {name:"乳清蛋白粉",kcal:400,pro:88,cho:12,fat:6},
     {name:"袋鼠先生牛腱",kcal:162,pro:29.7,cho:0,fat:3.2},
-    {name:"袋鼠椰子水鸡胸",kcal:110,pro:25,cho:1,fat:1}
+    {name:"袋鼠椰子水鸡胸",kcal:110,pro:25,cho:1,fat:1},
+    {name:"燕麦(干)",kcal:380,pro:13,cho:66,fat:7},
+    {name:"红薯(生)",kcal:86,pro:1.6,cho:20,fat:0.1},
+    {name:"瘦牛肉",kcal:125,pro:22,cho:0,fat:4},
+    {name:"巴沙鱼",kcal:100,pro:18,cho:0,fat:2}
   ],
   customFood:[],
-  macroTarget:{pro:215,cho:105,fat:86}
+  macroTarget:{pro:140,cho:225,fat:56}
 };
 let todayFood = [];
 
-// Tab切换
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.onclick = ()=>{
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -197,7 +199,102 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
   }
 })
 
-// ========= 自动生成计划核心函数 =========
+// 三套7天食谱
+const dietSet = {
+  big:{
+    title:"【大体重BMI≥28｜7天减脂食谱，低油、碳水偏低、保护膝盖】",
+    days:[
+      "Day1：早餐：燕麦40g+鸡蛋2个；午餐：去皮鸡腿200g+熟米饭120g+青菜400g；晚餐：巴沙鱼180g+西兰花300g",
+      "Day2：早餐：玉米1根+蛋白3个；午餐：瘦牛肉160g+红薯150g+菠菜；晚餐：鸡胸180g+菌菇蔬菜",
+      "Day3：早餐：燕麦40g+鸡蛋2个；午餐：鸡胸200g+米饭120g；晚餐：豆腐300g+大量青菜",
+      "Day4：早餐：红薯150g+鸡蛋2个；午餐：瘦牛肉160g+玉米半根；晚餐：巴沙鱼180g+生菜",
+      "Day5：早餐：玉米1根+蛋白3个；午餐：去皮鸡腿200g+红薯150g；晚餐：鸡胸180g+黄瓜番茄",
+      "Day6：早餐：燕麦40g+鸡蛋2个；午餐：巴沙鱼200g+米饭120g；晚餐：瘦牛肉140g+绿叶菜",
+      "Day7：早餐：红薯150g+鸡蛋2个；午餐：鸡胸200g+玉米半根；晚餐：豆腐+青菜，清淡休息"
+    ]
+  },
+  mid:{
+    title:"【超重BMI24~27.9｜7天减脂食谱，均衡碳水】",
+    days:[
+      "Day1：早餐：燕麦45g+全蛋2+蛋白2；午餐：瘦牛肉180g+熟米饭180g+青菜；晚餐：巴沙鱼180g+西兰花300g",
+      "Day2：早餐：玉米1根+鸡蛋2个；午餐：去皮鸡腿200g+红薯200g；晚餐：鸡胸180g+菌菇",
+      "Day3：早餐：燕麦45g+全蛋2；午餐：鸡胸200g+米饭180g；晚餐：瘦牛肉160g+菠菜",
+      "Day4：早餐：红薯200g+蛋白3个；午餐：巴沙鱼200g+玉米；晚餐：豆腐300g+大量青菜",
+      "Day5：早餐：玉米1根+鸡蛋2；午餐：瘦牛肉180g+米饭180g；晚餐：鸡胸180g+番茄黄瓜",
+      "Day6：早餐：燕麦45g+全蛋2；午餐：去皮鸡腿200g+红薯200g；晚餐：巴沙鱼180g+生菜",
+      "Day7：早餐：红薯200g+蛋白3；午餐：鸡胸200g+玉米；晚餐：瘦牛肉140g+蔬菜，减量休息"
+    ]
+  },
+  slim:{
+    title:"【正常BMI＜24｜保肌塑形7天食谱，训练日碳水偏高】",
+    days:[
+      "Day1(训练)：早餐：燕麦50g+全蛋2+蛋白2；午餐：瘦牛肉200g+熟米饭240g+青菜；加餐：香蕉1根+鸡胸80g；晚餐：巴沙鱼180g+红薯180g+蔬菜",
+      "Day2(训练)：早餐：玉米1根+鸡蛋2+蛋白2；午餐：去皮鸡腿200g+米饭240g；加餐：牛奶250ml；晚餐：瘦牛肉160g+西兰花",
+      "Day3(有氧)：早餐：燕麦50g+全蛋2；午餐：鸡胸200g+红薯200g；加餐：香蕉；晚餐：巴沙鱼180g+大量青菜",
+      "Day4(训练)：早餐：红薯200g+蛋白3；午餐：瘦牛肉200g+米饭240g；加餐：鸡胸80g；晚餐：豆腐+菌菇蔬菜",
+      "Day5(训练)：早餐：玉米1根+全蛋2+蛋白2；午餐：去皮鸡腿200g+红薯200g；加餐：香蕉；晚餐：鸡胸180g+菠菜",
+      "Day6(轻活动)：早餐：燕麦50g+全蛋2；午餐：巴沙鱼200g+米饭200g；加餐：牛奶；晚餐：瘦牛肉140g+青菜",
+      "Day7(休息)：早餐：红薯200g+鸡蛋2；午餐：鸡胸200g+玉米；晚餐：清淡，豆腐蔬菜，碳水减少"
+    ]
+  }
+};
+
+const trainSet = {
+  big:`🏋训练方案：大体重低冲击版本（保护膝关节，无跳跃）
+适用BMI≥28
+频率：每周3~4次，隔天训练，每次30分钟
+热身10分钟：原地踏步+肩髋膝关节活动
+1.靠墙静蹲 3组×30秒
+2.椅上臀桥 4组×12次
+3.跪姿俯卧撑 3组×力竭
+4.矿泉水瓶俯身划船 4组×12次
+5.平板支撑 3组×20~30秒
+结束：全身拉伸10分钟
+>禁止跳跃动作，晚上训练不要太晚`,
+  mid:`🏋训练方案：超重中等强度版本
+适用BMI 24~27.9
+频率：每周4练，力量为主，每周1次低强度有氧
+每次40分钟，热身8分钟
+1.徒手深蹲/哑铃深蹲 4×12
+2.俯身划船 4×12
+3.跪姿/标准俯卧撑 4×力竭
+4.弓步蹲 3×10/侧
+5.侧平板支撑 3×25s/侧
+有氧：快走或者骑车30分钟，心率微微喘即可
+>少长时间有氧，优先保肌肉`,
+  slim:`🏋训练方案：正常体重塑形分化训练（保肌减脂）
+适用BMI＜24，目标降低体脂、雕刻线条
+每周4次力量，周三轻有氧
+周一｜胸+三头
+1.俯卧撑4×力竭
+2.哑铃卧推4×10-12
+3.上斜推3×12
+4.俯身臂屈伸3×12
+
+周二｜背+二头
+1.俯身划船4×10-12
+2.弹力带下拉4×10
+3.坐姿划船3×12
+4.哑铃弯举3×12
+
+周四｜腿部
+1.哑铃深蹲4×10-12
+2.弓步蹲3×10/侧
+3.臀桥4×15
+4.提踵4×20
+
+周五｜肩+核心
+1.哑铃推举4×10
+2.侧平举3×12
+3.面拉3×12
+4.平板支撑3×45s
+5.死虫3×12/侧
+
+周三有氧：快走/慢跑30-40分钟
+周末：一天散步放松，一天完全休息
+>力量优先，有氧辅助`
+};
+
 function calcAutoPlan(){
   const gender = document.getElementById('genAuto').value;
   const h = Number(document.getElementById('heightAuto').value);
@@ -208,6 +305,7 @@ function calcAutoPlan(){
     alert("请完整填写身高、体重、年龄");
     return;
   }
+  const bmi = w / ((h/100)*(h/100));
   let BMR;
   if(gender==='male'){
     BMR = 10*w + 6.25*h -5*age +5;
@@ -215,7 +313,7 @@ function calcAutoPlan(){
     BMR = 10*w + 6.25*h -5*age -161;
   }
   const TDEE = BMR * act;
-  const targetCal = TDEE - 550;
+  const targetCal = TDEE - 500;
   const pro = 2.0 * w;
   const fat = 0.8 * w;
   const proKcal = pro *4;
@@ -223,9 +321,25 @@ function calcAutoPlan(){
   const carbKcal = targetCal - proKcal - fatKcal;
   let carb = carbKcal /4;
   if(carb<80) carb=80;
-  const carbTrain = carb +15;
+  const carbTrain = carb +25;
+
+  let diet,train;
+  if(bmi >= 28){
+    diet = dietSet.big;
+    train = trainSet.big;
+  }else if(bmi >=24){
+    diet = dietSet.mid;
+    train = trainSet.mid;
+  }else{
+    diet = dietSet.slim;
+    train = trainSet.slim;
+  }
+
+  let dayText = diet.title + "\n";
+  diet.days.forEach(d=> dayText += d+"\n");
 
   const resultText = `【基础代谢 & 目标】
+BMI：${bmi.toFixed(2)}
 BMR：${BMR.toFixed(0)} kcal
 每日消耗TDEE：${TDEE.toFixed(0)} kcal
 减脂目标摄入：${targetCal.toFixed(0)} kcal
@@ -234,28 +348,19 @@ BMR：${BMR.toFixed(0)} kcal
 休息日：蛋白${pro.toFixed(1)}g｜碳水${carb.toFixed(1)}g｜脂肪${fat.toFixed(1)}g
 训练日：蛋白${pro.toFixed(1)}g｜碳水${carbTrain.toFixed(1)}g｜脂肪${fat.toFixed(1)}g
 
-🍽推荐平价食谱（通勤适用）
-早餐：半根糯玉米 + 2个鸡蛋白 + 2个蛋黄
-午餐：2个去皮卤鸡腿 + 一拳熟米饭 + 大量烫青菜
-下午加餐：半根糯玉米 + 即食鸡胸/袋鼠牛腱（补足蛋白缺口）
-晚间：1勺乳清蛋白粉
->备注：不吃额外晚餐；每日饮水2000~2500ml；卤汁不要喝，鸡腿去皮
+🍽${dayText}
 
-🏋居家力量训练计划（大体重低冲击，不伤膝盖）
-频率：每周3~4次，隔天训练，每次30分钟
-热身10分钟：原地踏步+肩髋膝关节活动
-1.靠墙静蹲 3组×30秒
-2.椅上臀桥 4组×12次
-3.跪姿俯卧撑 3组×力竭
-4.矿泉水瓶俯身划船 4组×12次
-5.平板支撑 3组×20~30秒
-结束：全身拉伸10分钟
->训练放在22点到家后，不要高强度，避免失眠，禁止跳跃动作`;
+${train}
+
+💡备注：
+1.7天循环轮换，一轮结束重新从Day1开始
+2.烹饪少油，蔬菜不限量（淀粉类蔬菜算主食）
+3.每日饮水2000~2500ml，禁止含糖饮料
+4.食物可以同类互换（米饭↔红薯↔玉米，鸡胸↔牛腱↔巴沙鱼）`;
   document.getElementById('planResult').innerText = resultText;
   window.generatedMacro = {pro,cho:carb,fat};
 }
 
-// 应用生成的营养素目标到系统
 function applyPlanMacro(){
   if(!window.generatedMacro){
     alert("请先生成计划！");
@@ -265,11 +370,10 @@ function applyPlanMacro(){
   appData.macroTarget.cho = window.generatedMacro.cho;
   appData.macroTarget.fat = window.generatedMacro.fat;
   saveData();
-  alert("✅营养素目标已应用！训练日碳水自动+15g");
+  alert("✅营养素目标已应用！");
   renderMacroInput();
 }
 
-// ===== 基础工具函数 =====
 function saveData(){
   localStorage.setItem('fatAppData',JSON.stringify(appData));
 }
@@ -303,7 +407,6 @@ function calcBmiFat(){
   document.getElementById('bmiFatResult').innerText = `BMI:${bmi.toFixed(2)}，估算体脂率：${fatRate.toFixed(1)}%`;
 }
 
-//食物库搜索
 function searchFoodLib(){
   let name = document.getElementById('searchFood').value.trim();
   let find = appData.foodLib.find(x=>x.name.includes(name)) || appData.customFood.find(x=>x.name.includes(name));
@@ -325,13 +428,12 @@ function renderCustomFood(){
   appData.customFood.forEach((item,i)=>{
     html +=`<div>${item.name} <button class="del" onclick="delCusFood(${i})">删除</button></div>`
   })
-  document.getElementById('customFoodList').innerHTML = html;
+  document.getElementById('customFoodList').innerHTML=html;
 }
 function delCusFood(idx){
   appData.customFood.splice(idx,1);saveData();renderCustomFood();
 }
 
-//今日食物
 function addFoodItem(){
   let fdName = document.getElementById('foodName').value;
   let gram = Number(document.getElementById('foodGram').value);
@@ -350,9 +452,8 @@ function renderTodayFood(){
     sumK+=it.kcal;sumP+=it.pro;sumC+=it.cho;sumF+=it.fat;
   })
   document.getElementById('todayFoodList').innerHTML=html;
-  //目标判断
   let tPro = appData.macroTarget.pro;
-  let tCho = appData.macroTarget.cho + (document.getElementById("isTrainDay").checked ? 15 :0);
+  let tCho = appData.macroTarget.cho + (document.getElementById("isTrainDay").checked ? 25 :0);
   let tFat = appData.macroTarget.fat;
   document.getElementById('macroSummary').innerHTML = `
   <div>✅已摄入：热量${sumK.toFixed(0)}kcal｜蛋白${sumP.toFixed(1)}g｜碳水${sumC.toFixed(1)}g｜脂肪${sumF.toFixed(1)}g</div>
@@ -361,7 +462,6 @@ function renderTodayFood(){
   `;
 }
 
-//打卡记录
 function saveDayRecord(){
   let rec = {
     date:new Date().toLocaleDateString(),
@@ -388,7 +488,6 @@ function showRecDetail(i){
   alert(`日期${r.date}\n体重${r.weight}kg\n腰围${r.waist}\n饮水量${r.water}\n食物清单:\n${foodText}`);
 }
 
-//图表
 let weightChart;
 function renderChart(){
   const ctx = document.getElementById('weightChart').getContext('2d');
@@ -401,7 +500,6 @@ function renderChart(){
   })
 }
 
-//初始化
 renderMacroInput();
 renderCustomFood();
 renderHistory();

@@ -18,12 +18,15 @@ button{background:#2277dd;color:#fff;border:none;border-radius:6px;cursor:pointe
 button.del{background:#dd3333;}
 button.green{background:#199444;}
 button.orange{background:#f28522;}
+button.smallBtn{width:auto;padding:4px 10px;font-size:14px;margin:4px 0;}
 .row{display:flex;gap:8px;}
 .row>input{flex:1;}
 pre{white-space:pre-wrap;}
 .history-item{padding:8px;border:1px solid #ccc;border-radius:6px;margin:6px 0;cursor:pointer;}
 .chartBox{height:260px;border:1px solid #ddd;border-radius:8px;padding:8px;margin:10px 0;}
 small{color:#666;font-size:13px;}
+.info-card{background:#f0f7ff;border-color:#2277dd;}
+.plan-full{margin-top:8px;padding:10px;background:#fff;border-radius:8px;display:none;font-size:14px;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -35,6 +38,18 @@ small{color:#666;font-size:13px;}
 
 <!-- ========== 首页打卡 tab1 ========== -->
 <div id="tab1" class="tab-panel active">
+  <!-- 【当前生效减脂方案卡片｜新增展开食谱训练】 -->
+  <div class="card info-card">
+    <h3>🎯 当前生效减脂方案</h3>
+    <div id="homePlanInfo">
+      <small>暂未应用减脂方案，请前往【基础设置】计算并应用目标</small>
+    </div>
+    <div id="togglePlanWrap" style="display:none;">
+      <button class="smallBtn" id="togglePlanBtn" onclick="toggleFullPlan()">展开完整食谱+训练计划</button>
+      <div class="plan-full" id="fullPlanBox"></div>
+    </div>
+  </div>
+
   <div class="card">
     <h3>今日打卡</h3>
     <div class="row">
@@ -102,10 +117,9 @@ small{color:#666;font-size:13px;}
     </div>
     <button class="orange" onclick="calcGoalPlan()">计算周期 + 生成饮食&训练方案</button>
     <div id="goalResult" style="margin-top:10px;white-space:pre-line;"></div>
-    <button class="green" onclick="applyGoalMacro()" style="margin-top:8px;">应用这套营养素目标</button>
+    <button class="green" onclick="applyGoalPlan()">应用这套营养素目标</button>
   </div>
 
-  <!-- ========== 新增：目标体脂测算 ========== -->
   <div class="card">
     <h3>🎯体脂目标测算（按体脂率，保肌减脂）</h3>
     <div class="row">
@@ -128,7 +142,7 @@ small{color:#666;font-size:13px;}
     </div>
     <button class="orange" onclick="calcFatGoalPlan()">计算周期 + 生成饮食&训练方案</button>
     <div id="fatGoalResult" style="margin-top:10px;white-space:pre-line;"></div>
-    <button class="green" onclick="applyFatGoalMacro()" style="margin-top:8px;">应用这套营养素目标</button>
+    <button class="green" onclick="applyFatGoalPlan()">应用这套营养素目标</button>
   </div>
 
   <div class="card">
@@ -242,11 +256,15 @@ let appData = JSON.parse(localStorage.getItem('fatAppData')) || {
     {name:"巴沙鱼",kcal:100,pro:18,cho:0,fat:2}
   ],
   customFood:[],
-  macroTarget:{pro:140,cho:225,fat:56}
+  macroTarget:{pro:140,cho:225,fat:56},
+  lastPlanInfo:null,
+  fullPlanText:"" // 存储完整食谱+训练
 };
 let todayFood = [];
 window.goalMacro = null;
 window.fatGoalMacro = null;
+window.generatedMacro = null;
+let planOpen = false;
 
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.onclick = ()=>{
@@ -257,7 +275,6 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
   }
 })
 
-// 三套7天食谱
 const dietSet = {
   big:{
     title:"【大体重BMI≥28｜7天减脂食谱，低油、碳水偏低、保护膝盖】",
@@ -353,7 +370,33 @@ const trainSet = {
 >力量优先，有氧辅助`
 };
 
-// ========== 减重目标测算（原有） ==========
+function toggleFullPlan(){
+  planOpen = !planOpen;
+  const box = document.getElementById("fullPlanBox");
+  const btn = document.getElementById("togglePlanBtn");
+  if(planOpen){
+    box.style.display="block";
+    btn.innerText="收起完整食谱+训练计划";
+    box.innerHTML = appData.fullPlanText;
+  }else{
+    box.style.display="none";
+    btn.innerText="展开完整食谱+训练计划";
+  }
+}
+
+function renderHomePlan(){
+  const box = document.getElementById("homePlanInfo");
+  const toggleWrap = document.getElementById("togglePlanWrap");
+  if(!appData.lastPlanInfo){
+    box.innerHTML = `<small>暂未应用减脂方案，请前往【基础设置】计算并应用目标</small>`;
+    toggleWrap.style.display="none";
+    return;
+  }
+  box.innerHTML = appData.lastPlanInfo;
+  toggleWrap.style.display="block";
+  document.getElementById("fullPlanBox").innerHTML = appData.fullPlanText;
+}
+
 function calcGoalPlan(){
   const currW = Number(document.getElementById('currW').value);
   const targetW = Number(document.getElementById('targetW').value);
@@ -375,7 +418,6 @@ function calcGoalPlan(){
   let endDate = new Date();
   endDate.setDate(endDate.getDate() + dayNeed);
 
-  // BMR
   let BMR;
   if(g==='male') BMR = 10*currW + 6.25*h -5*age +5;
   else BMR = 10*currW + 6.25*h -5*age -161;
@@ -398,38 +440,20 @@ function calcGoalPlan(){
   else if(bmi >=24){ diet = dietSet.mid; train = trainSet.mid; }
   else { diet = dietSet.slim; train = trainSet.slim; }
 
-  let dayText = diet.title + "\n";
-  diet.days.forEach(d=> dayText += d+"\n");
+  const out = `🎯【体重减脂方案】
+当前：${currW}kg → 目标：${targetW}kg
+预计周期：${weekNeed.toFixed(1)}周（${dayNeed}天）｜预计达成：${endDate.getFullYear()}-${endDate.getMonth()+1}-${endDate.getDate()}
+每日TDEE：${TDEE.toFixed(0)} kcal｜热量缺口：${deficitPerDay.toFixed(0)} kcal｜目标摄入：${targetCal.toFixed(0)} kcal
+休息日：蛋白 ${pro.toFixed(1)}g｜碳水 ${carb.toFixed(1)}g｜脂肪 ${fat.toFixed(1)}g
+训练日：蛋白 ${pro.toFixed(1)}g｜碳水 ${carbTrain.toFixed(1)}g｜脂肪 ${fat.toFixed(1)}g`;
 
-  const out = `🎯减重目标测算结果
-当前体重：${currW} kg｜目标体重：${targetW} kg
-总共需要减重：${loseTotal.toFixed(1)} kg
-每周减重速度：${losePerWeek} kg
-预估需要：${weekNeed.toFixed(1)} 周 ≈ ${dayNeed} 天
-预计达成日期：${endDate.getFullYear()}-${endDate.getMonth()+1}-${endDate.getDate()}
-
-📊热量 & 三大营养素目标
-每日消耗TDEE：${TDEE.toFixed(0)} kcal
-每日热量缺口：${deficitPerDay.toFixed(0)} kcal
-目标摄入热量：${targetCal.toFixed(0)} kcal
-
-休息日：蛋白质(Pro) ${pro.toFixed(1)}g｜碳水化合物(CHO) ${carb.toFixed(1)}g｜脂肪(Fat) ${fat.toFixed(1)}g
-训练日：蛋白质(Pro) ${pro.toFixed(1)}g｜碳水化合物(CHO) ${carbTrain.toFixed(1)}g｜脂肪(Fat) ${fat.toFixed(1)}g
-
-🍽配套7天食谱
-${dayText}
-
-${train}
-
-💡备注
-1. 预估时间为理论计算，实际会受睡眠、盐分、经期、执行度影响
-2. 同类食物可以互换，优先保证蛋白质(Pro)达标
-3. 每周称重1~3次，看7天平均，不要纠结单日波动`;
+  const fullText = `<div style="white-space:pre-line">${diet.title}\n${diet.days.join("\n")}\n\n${train}</div>`;
 
   document.getElementById('goalResult').innerText = out;
   window.goalMacro = {pro, cho:carb, fat};
+  window.currentFullText = fullText;
 }
-function applyGoalMacro(){
+function applyGoalPlan(){
   if(!window.goalMacro){
     alert("请先计算目标方案！");
     return;
@@ -437,12 +461,15 @@ function applyGoalMacro(){
   appData.macroTarget.pro = window.goalMacro.pro;
   appData.macroTarget.cho = window.goalMacro.cho;
   appData.macroTarget.fat = window.goalMacro.fat;
+  appData.lastPlanInfo = document.getElementById("goalResult").innerText.replaceAll("\n","<br>");
+  appData.fullPlanText = window.currentFullText;
   saveData();
   alert("✅已将这套营养素目标设置为打卡目标");
   renderMacroInput();
+  renderHomePlan();
+  renderTodayFood();
 }
 
-// ========== 新增：按体脂目标测算 ==========
 function calcFatGoalPlan(){
   const currFat = Number(document.getElementById('currFatPct').value);
   const targetFat = Number(document.getElementById('targetFatPct').value);
@@ -457,25 +484,20 @@ function calcFatGoalPlan(){
     alert("目标体脂必须低于当前体脂！");
     return;
   }
-  // 瘦体重 LBM 不变（保肌假设）
   const lbm = w * (1 - currFat / 100);
-  // 达到目标体脂时，理论总体重
   const targetTotalW = lbm / (1 - targetFat / 100);
-  const fatNeedLose = w - targetTotalW; // 需要减掉的脂肪重量
+  const fatNeedLose = w - targetTotalW;
   const pctNeedLose = currFat - targetFat;
   const weekNeed = pctNeedLose / fatPerWeek;
   const dayNeed = Math.ceil(weekNeed * 7);
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + dayNeed);
 
-  // 保肌减脂：蛋白质拉高 2.2g/kg瘦体重
   const pro = lbm * 2.2;
   const fat = lbm * 0.7;
-  // 热量缺口：每周减掉脂肪kg *7700
   const weeklyDeficit = fatNeedLose * 7700;
   const dailyDeficit = weeklyDeficit / weekNeed;
-  // 估算TDEE
-  const bmi = w / ((1.70)*(1.70)); // 简易估算，重点看缺口
+  const bmi = w / ((1.70)*(1.70));
   const BMR = gender === 'male' ? (10*w + 6.25*170 -5*30 +5) : (10*w + 6.25*170 -5*30 -161);
   const TDEE = BMR * 1.4;
   let targetCal = TDEE - dailyDeficit;
@@ -486,49 +508,27 @@ function calcFatGoalPlan(){
   let carbK = targetCal - proK - fatK;
   let carb = carbK /4;
   if(carb <70) carb=70;
-  const carbTrain = carb + 30; // 体脂计划训练日碳水多加一点
+  const carbTrain = carb + 30;
+
+  const out = `🎯【体脂保肌减脂方案】
+当前体脂：${currFat}% → 目标体脂：${targetFat}%
+瘦体重：${lbm.toFixed(2)}kg｜达成后理论体重：${targetTotalW.toFixed(2)}kg
+预计周期：${weekNeed.toFixed(1)}周（${dayNeed}天）｜预计达成：${endDate.getFullYear()}-${endDate.getMonth()+1}-${endDate.getDate()}
+每日TDEE：${TDEE.toFixed(0)} kcal｜热量缺口：${dailyDeficit.toFixed(0)} kcal｜目标摄入：${targetCal.toFixed(0)} kcal
+休息日：蛋白 ${pro.toFixed(1)}g｜碳水 ${carb.toFixed(1)}g｜脂肪 ${fat.toFixed(1)}g
+训练日：蛋白 ${pro.toFixed(1)}g｜碳水 ${carbTrain.toFixed(1)}g｜脂肪 ${fat.toFixed(1)}g`;
 
   let diet, train;
   if(bmi >=28){ diet = dietSet.big; train = trainSet.big; }
   else if(bmi >=24){ diet = dietSet.mid; train = trainSet.mid; }
   else { diet = dietSet.slim; train = trainSet.slim; }
+  const fullText = `<div style="white-space:pre-line">${diet.title}\n${diet.days.join("\n")}\n\n${train}</div>`;
 
-  let dayText = diet.title + "\n";
-  diet.days.forEach(d=> dayText += d+"\n");
-
-  const out = `🎯体脂目标测算结果（保肌减脂模型）
-当前体脂率：${currFat}%｜目标体脂率：${targetFat}%
-当前体重：${w.toFixed(2)} kg
-瘦体重(肌肉+器官骨骼)：${lbm.toFixed(2)} kg（假设肌肉尽量不掉）
-达到目标体脂理论体重：${targetTotalW.toFixed(2)} kg
-需要减掉纯脂肪：${fatNeedLose.toFixed(2)} kg
-需要下降体脂幅度：${pctNeedLose.toFixed(1)} %
-每周计划降体脂：${fatPerWeek} %
-预估周期：${weekNeed.toFixed(1)} 周 ≈ ${dayNeed} 天
-预计达成日期：${endDate.getFullYear()}-${endDate.getMonth()+1}-${endDate.getDate()}
-
-📊热量 & 三大营养素目标（保肌优先，蛋白更高）
-预估每日消耗TDEE：${TDEE.toFixed(0)} kcal
-每日热量缺口：${dailyDeficit.toFixed(0)} kcal
-目标摄入热量：${targetCal.toFixed(0)} kcal
-
-休息日：蛋白质(Pro) ${pro.toFixed(1)}g｜碳水化合物(CHO) ${carb.toFixed(1)}g｜脂肪(Fat) ${fat.toFixed(1)}g
-训练日：蛋白质(Pro) ${pro.toFixed(1)}g｜碳水化合物(CHO) ${carbTrain.toFixed(1)}g｜脂肪(Fat) ${fat.toFixed(1)}g
-
-🍽配套7天食谱
-${dayText}
-
-${train}
-
-💡重要备注
-1. 本模型【假设瘦体重不变】，所以必须坚持力量训练，否则肌肉流失，体脂下降会变慢
-2. 体脂测量误差很大（±2~4%都正常），优先长期趋势，不要纠结单次数值
-3. 蛋白质拉高是为了保住肌肉，降体脂和单纯减重逻辑不一样
-4. 不要追求过快降体脂，太快极易掉肌肉`;
   document.getElementById('fatGoalResult').innerText = out;
   window.fatGoalMacro = {pro, cho:carb, fat};
+  window.currentFullText = fullText;
 }
-function applyFatGoalMacro(){
+function applyFatGoalPlan(){
   if(!window.fatGoalMacro){
     alert("请先计算体脂目标方案！");
     return;
@@ -536,9 +536,13 @@ function applyFatGoalMacro(){
   appData.macroTarget.pro = window.fatGoalMacro.pro;
   appData.macroTarget.cho = window.fatGoalMacro.cho;
   appData.macroTarget.fat = window.fatGoalMacro.fat;
+  appData.lastPlanInfo = document.getElementById("fatGoalResult").innerText.replaceAll("\n","<br>");
+  appData.fullPlanText = window.currentFullText;
   saveData();
   alert("✅体脂目标方案营养素已应用！");
   renderMacroInput();
+  renderHomePlan();
+  renderTodayFood();
 }
 
 function calcAutoPlan(){
@@ -569,45 +573,21 @@ function calcAutoPlan(){
   if(carb<80) carb=80;
   const carbTrain = carb +25;
 
-  let diet,train;
-  if(bmi >= 28){
-    diet = dietSet.big;
-    train = trainSet.big;
-  }else if(bmi >=24){
-    diet = dietSet.mid;
-    train = trainSet.mid;
-  }else{
-    diet = dietSet.slim;
-    train = trainSet.slim;
-  }
+  const resultText = `🎯【自动BMI方案】BMI：${bmi.toFixed(2)}
+BMR：${BMR.toFixed(0)} kcal｜TDEE：${TDEE.toFixed(0)} kcal｜目标摄入：${targetCal.toFixed(0)} kcal
+休息日：蛋白 ${pro.toFixed(1)}g｜碳水 ${carb.toFixed(1)}g｜脂肪 ${fat.toFixed(1)}g
+训练日：蛋白 ${pro.toFixed(1)}g｜碳水 ${carbTrain.toFixed(1)}g｜脂肪 ${fat.toFixed(1)}g`;
 
-  let dayText = diet.title + "\n";
-  diet.days.forEach(d=> dayText += d+"\n");
+  let diet, train;
+  if(bmi >=28){ diet = dietSet.big; train = trainSet.big; }
+  else if(bmi >=24){ diet = dietSet.mid; train = trainSet.mid; }
+  else { diet = dietSet.slim; train = trainSet.slim; }
+  const fullText = `<div style="white-space:pre-line">${diet.title}\n${diet.days.join("\n")}\n\n${train}</div>`;
 
-  const resultText = `【基础代谢 & 目标】
-BMI：${bmi.toFixed(2)}
-BMR：${BMR.toFixed(0)} kcal
-每日消耗TDEE：${TDEE.toFixed(0)} kcal
-减脂目标摄入：${targetCal.toFixed(0)} kcal
-
-🎯宏量营养素目标
-休息日：蛋白质(Pro)${pro.toFixed(1)}g｜碳水化合物(CHO)${carb.toFixed(1)}g｜脂肪(Fat)${fat.toFixed(1)}g
-训练日：蛋白质(Pro)${pro.toFixed(1)}g｜碳水化合物(CHO)${carbTrain.toFixed(1)}g｜脂肪(Fat)${fat.toFixed(1)}g
-
-🍽${dayText}
-
-${train}
-
-💡备注：
-1.7天循环轮换，一轮结束重新从Day1开始
-2.烹饪少油，蔬菜不限量（淀粉类蔬菜算主食）
-3.每日饮水2000~2500ml，禁止含糖饮料
-4.食物可以同类互换（米饭↔红薯↔玉米，鸡胸↔牛腱↔巴沙鱼）
-热量换算：蛋白质4kcal/g，碳水4kcal/g，脂肪9kcal/g`;
   document.getElementById('planResult').innerText = resultText;
   window.generatedMacro = {pro,cho:carb,fat};
+  window.currentFullText = fullText;
 }
-
 function applyPlanMacro(){
   if(!window.generatedMacro){
     alert("请先生成计划！");
@@ -616,9 +596,13 @@ function applyPlanMacro(){
   appData.macroTarget.pro = window.generatedMacro.pro;
   appData.macroTarget.cho = window.generatedMacro.cho;
   appData.macroTarget.fat = window.generatedMacro.fat;
+  appData.lastPlanInfo = document.getElementById("planResult").innerText.replaceAll("\n","<br>");
+  appData.fullPlanText = window.currentFullText;
   saveData();
   alert("✅营养素目标已应用！");
   renderMacroInput();
+  renderHomePlan();
+  renderTodayFood();
 }
 
 function saveData(){
@@ -751,6 +735,7 @@ renderMacroInput();
 renderCustomFood();
 renderHistory();
 renderChart();
+renderHomePlan();
 </script>
 </body>
 </html>

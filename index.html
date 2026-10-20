@@ -77,7 +77,7 @@ small{color:#666;font-size:13px;}
 <!-- ========== 基础设置 tab2 ========== -->
 <div id="tab2" class="tab-panel">
   <div class="card">
-    <h3>🎯减重目标测算（新增）</h3>
+    <h3>🎯减重目标测算（按体重）</h3>
     <div class="row">
       <input type="number" id="currW" placeholder="当前体重kg" step="0.01">
       <input type="number" id="targetW" placeholder="目标体重kg" step="0.01">
@@ -103,6 +103,32 @@ small{color:#666;font-size:13px;}
     <button class="orange" onclick="calcGoalPlan()">计算周期 + 生成饮食&训练方案</button>
     <div id="goalResult" style="margin-top:10px;white-space:pre-line;"></div>
     <button class="green" onclick="applyGoalMacro()" style="margin-top:8px;">应用这套营养素目标</button>
+  </div>
+
+  <!-- ========== 新增：目标体脂测算 ========== -->
+  <div class="card">
+    <h3>🎯体脂目标测算（按体脂率，保肌减脂）</h3>
+    <div class="row">
+      <input type="number" id="currFatPct" placeholder="当前体脂率 %" step="0.1">
+      <input type="number" id="targetFatPct" placeholder="目标体脂率 %" step="0.1">
+    </div>
+    <div class="row">
+      <input type="number" id="fatGoalW" placeholder="当前体重 kg" step="0.01">
+      <select id="fatGoalGender">
+        <option value="male">男</option>
+        <option value="female">女</option>
+      </select>
+    </div>
+    <div class="row">
+      <select id="fatLoseSpeed">
+        <option value="0.3">每周降0.3%体脂（温和保肌，推荐）</option>
+        <option value="0.5">每周降0.5%体脂（较快）</option>
+        <option value="0.7">每周降0.7%体脂（较快，适合大体重）</option>
+      </select>
+    </div>
+    <button class="orange" onclick="calcFatGoalPlan()">计算周期 + 生成饮食&训练方案</button>
+    <div id="fatGoalResult" style="margin-top:10px;white-space:pre-line;"></div>
+    <button class="green" onclick="applyFatGoalMacro()" style="margin-top:8px;">应用这套营养素目标</button>
   </div>
 
   <div class="card">
@@ -220,6 +246,7 @@ let appData = JSON.parse(localStorage.getItem('fatAppData')) || {
 };
 let todayFood = [];
 window.goalMacro = null;
+window.fatGoalMacro = null;
 
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.onclick = ()=>{
@@ -326,7 +353,7 @@ const trainSet = {
 >力量优先，有氧辅助`
 };
 
-// ========== 新增：减重目标测算 ==========
+// ========== 减重目标测算（原有） ==========
 function calcGoalPlan(){
   const currW = Number(document.getElementById('currW').value);
   const targetW = Number(document.getElementById('targetW').value);
@@ -412,6 +439,105 @@ function applyGoalMacro(){
   appData.macroTarget.fat = window.goalMacro.fat;
   saveData();
   alert("✅已将这套营养素目标设置为打卡目标");
+  renderMacroInput();
+}
+
+// ========== 新增：按体脂目标测算 ==========
+function calcFatGoalPlan(){
+  const currFat = Number(document.getElementById('currFatPct').value);
+  const targetFat = Number(document.getElementById('targetFatPct').value);
+  const w = Number(document.getElementById('fatGoalW').value);
+  const gender = document.getElementById('fatGoalGender').value;
+  const fatPerWeek = Number(document.getElementById('fatLoseSpeed').value);
+  if(!currFat||!targetFat||!w){
+    alert("请填写当前体脂、目标体脂、当前体重");
+    return;
+  }
+  if(targetFat >= currFat){
+    alert("目标体脂必须低于当前体脂！");
+    return;
+  }
+  // 瘦体重 LBM 不变（保肌假设）
+  const lbm = w * (1 - currFat / 100);
+  // 达到目标体脂时，理论总体重
+  const targetTotalW = lbm / (1 - targetFat / 100);
+  const fatNeedLose = w - targetTotalW; // 需要减掉的脂肪重量
+  const pctNeedLose = currFat - targetFat;
+  const weekNeed = pctNeedLose / fatPerWeek;
+  const dayNeed = Math.ceil(weekNeed * 7);
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + dayNeed);
+
+  // 保肌减脂：蛋白质拉高 2.2g/kg瘦体重
+  const pro = lbm * 2.2;
+  const fat = lbm * 0.7;
+  // 热量缺口：每周减掉脂肪kg *7700
+  const weeklyDeficit = fatNeedLose * 7700;
+  const dailyDeficit = weeklyDeficit / weekNeed;
+  // 估算TDEE
+  const bmi = w / ((1.70)*(1.70)); // 简易估算，重点看缺口
+  const BMR = gender === 'male' ? (10*w + 6.25*170 -5*30 +5) : (10*w + 6.25*170 -5*30 -161);
+  const TDEE = BMR * 1.4;
+  let targetCal = TDEE - dailyDeficit;
+  if(targetCal < 1100) targetCal = 1100;
+
+  const proK = pro *4;
+  const fatK = fat *9;
+  let carbK = targetCal - proK - fatK;
+  let carb = carbK /4;
+  if(carb <70) carb=70;
+  const carbTrain = carb + 30; // 体脂计划训练日碳水多加一点
+
+  let diet, train;
+  if(bmi >=28){ diet = dietSet.big; train = trainSet.big; }
+  else if(bmi >=24){ diet = dietSet.mid; train = trainSet.mid; }
+  else { diet = dietSet.slim; train = trainSet.slim; }
+
+  let dayText = diet.title + "\n";
+  diet.days.forEach(d=> dayText += d+"\n");
+
+  const out = `🎯体脂目标测算结果（保肌减脂模型）
+当前体脂率：${currFat}%｜目标体脂率：${targetFat}%
+当前体重：${w.toFixed(2)} kg
+瘦体重(肌肉+器官骨骼)：${lbm.toFixed(2)} kg（假设肌肉尽量不掉）
+达到目标体脂理论体重：${targetTotalW.toFixed(2)} kg
+需要减掉纯脂肪：${fatNeedLose.toFixed(2)} kg
+需要下降体脂幅度：${pctNeedLose.toFixed(1)} %
+每周计划降体脂：${fatPerWeek} %
+预估周期：${weekNeed.toFixed(1)} 周 ≈ ${dayNeed} 天
+预计达成日期：${endDate.getFullYear()}-${endDate.getMonth()+1}-${endDate.getDate()}
+
+📊热量 & 三大营养素目标（保肌优先，蛋白更高）
+预估每日消耗TDEE：${TDEE.toFixed(0)} kcal
+每日热量缺口：${dailyDeficit.toFixed(0)} kcal
+目标摄入热量：${targetCal.toFixed(0)} kcal
+
+休息日：蛋白质(Pro) ${pro.toFixed(1)}g｜碳水化合物(CHO) ${carb.toFixed(1)}g｜脂肪(Fat) ${fat.toFixed(1)}g
+训练日：蛋白质(Pro) ${pro.toFixed(1)}g｜碳水化合物(CHO) ${carbTrain.toFixed(1)}g｜脂肪(Fat) ${fat.toFixed(1)}g
+
+🍽配套7天食谱
+${dayText}
+
+${train}
+
+💡重要备注
+1. 本模型【假设瘦体重不变】，所以必须坚持力量训练，否则肌肉流失，体脂下降会变慢
+2. 体脂测量误差很大（±2~4%都正常），优先长期趋势，不要纠结单次数值
+3. 蛋白质拉高是为了保住肌肉，降体脂和单纯减重逻辑不一样
+4. 不要追求过快降体脂，太快极易掉肌肉`;
+  document.getElementById('fatGoalResult').innerText = out;
+  window.fatGoalMacro = {pro, cho:carb, fat};
+}
+function applyFatGoalMacro(){
+  if(!window.fatGoalMacro){
+    alert("请先计算体脂目标方案！");
+    return;
+  }
+  appData.macroTarget.pro = window.fatGoalMacro.pro;
+  appData.macroTarget.cho = window.fatGoalMacro.cho;
+  appData.macroTarget.fat = window.fatGoalMacro.fat;
+  saveData();
+  alert("✅体脂目标方案营养素已应用！");
   renderMacroInput();
 }
 

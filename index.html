@@ -17,6 +17,7 @@ input,select,button{width:100%;padding:8px;margin:6px 0;font-size:16px;}
 button{background:#2277dd;color:#fff;border:none;border-radius:6px;cursor:pointer;}
 button.del{background:#dd3333;}
 button.green{background:#199444;}
+button.orange{background:#f28522;}
 .row{display:flex;gap:8px;}
 .row>input{flex:1;}
 pre{white-space:pre-wrap;}
@@ -76,6 +77,35 @@ small{color:#666;font-size:13px;}
 <!-- ========== 基础设置 tab2 ========== -->
 <div id="tab2" class="tab-panel">
   <div class="card">
+    <h3>🎯减重目标测算（新增）</h3>
+    <div class="row">
+      <input type="number" id="currW" placeholder="当前体重kg" step="0.01">
+      <input type="number" id="targetW" placeholder="目标体重kg" step="0.01">
+    </div>
+    <div class="row">
+      <select id="loseSpeed">
+        <option value="0.5">每周减0.5kg（温和，推荐）</option>
+        <option value="0.75">每周减0.75kg（适中）</option>
+        <option value="1.0">每周减1.0kg（快速，大体重适用）</option>
+      </select>
+    </div>
+    <div>
+      <label>性别：</label>
+      <select id="goalGender">
+        <option value="male">男</option>
+        <option value="female">女</option>
+      </select>
+    </div>
+    <div class="row">
+      <input type="number" id="goalH" placeholder="身高cm">
+      <input type="number" id="goalAge" placeholder="年龄">
+    </div>
+    <button class="orange" onclick="calcGoalPlan()">计算周期 + 生成饮食&训练方案</button>
+    <div id="goalResult" style="margin-top:10px;white-space:pre-line;"></div>
+    <button class="green" onclick="applyGoalMacro()" style="margin-top:8px;">应用这套营养素目标</button>
+  </div>
+
+  <div class="card">
     <h3>个人基础信息 & 体脂计算</h3>
     <div class="row">
       <input type="number" id="setHeight" placeholder="身高cm">
@@ -98,14 +128,14 @@ small{color:#666;font-size:13px;}
   </div>
 
   <div class="card">
-    <h3>三大营养素目标</h3>
+    <h3>三大营养素目标｜蛋白质(Pro) / 碳水化合物(CHO) / 脂肪(Fat)</h3>
     <div class="row">
-      <input type="number" id="targetPro" placeholder="蛋白质目标 g">
-      <input type="number" id="targetCho" placeholder="碳水目标 g">
-      <input type="number" id="targetFat" placeholder="脂肪目标 g">
+      <input type="number" id="targetPro" placeholder="蛋白质(Pro) g">
+      <input type="number" id="targetCho" placeholder="碳水化合物(CHO) g">
+      <input type="number" id="targetFat" placeholder="脂肪(Fat) g">
     </div>
     <button onclick="saveMacroTarget()">保存宏量目标</button>
-    <small>训练日会自动切换碳水+15g</small>
+    <small>训练日碳水化合物(CHO)自动 +25g</small>
   </div>
 
   <div class="card">
@@ -151,15 +181,15 @@ small{color:#666;font-size:13px;}
     <div id="foodSearchResult"></div>
   </div>
   <div class="card">
-    <h3>自定义食物录入</h3>
+    <h3>自定义食物录入｜蛋白质(Pro) / 碳水(CHO) / 脂肪(Fat)</h3>
     <div class="row">
       <input id="cusName" placeholder="食物名">
       <input id="cusKcal" placeholder="热量kcal/100g">
     </div>
     <div class="row">
-      <input id="cusPro" placeholder="蛋白g/100g">
-      <input id="cusCho" placeholder="碳水g/100g">
-      <input id="cusFat" placeholder="脂肪g/100g">
+      <input id="cusPro" placeholder="蛋白质(Pro) g/100g">
+      <input id="cusCho" placeholder="碳水化合物(CHO) g/100g">
+      <input id="cusFat" placeholder="脂肪(Fat) g/100g">
     </div>
     <button onclick="addCustomFood()">保存自定义食物</button>
     <div id="customFoodList"></div>
@@ -189,6 +219,7 @@ let appData = JSON.parse(localStorage.getItem('fatAppData')) || {
   macroTarget:{pro:140,cho:225,fat:56}
 };
 let todayFood = [];
+window.goalMacro = null;
 
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.onclick = ()=>{
@@ -295,6 +326,95 @@ const trainSet = {
 >力量优先，有氧辅助`
 };
 
+// ========== 新增：减重目标测算 ==========
+function calcGoalPlan(){
+  const currW = Number(document.getElementById('currW').value);
+  const targetW = Number(document.getElementById('targetW').value);
+  const losePerWeek = Number(document.getElementById('loseSpeed').value);
+  const g = document.getElementById('goalGender').value;
+  const h = Number(document.getElementById('goalH').value);
+  const age = Number(document.getElementById('goalAge').value);
+  if(!currW||!targetW||!h||!age){
+    alert("请填写完整：当前体重、目标体重、身高、年龄");
+    return;
+  }
+  if(targetW >= currW){
+    alert("目标体重需要小于当前体重！");
+    return;
+  }
+  const loseTotal = currW - targetW;
+  const weekNeed = loseTotal / losePerWeek;
+  const dayNeed = Math.ceil(weekNeed * 7);
+  let endDate = new Date();
+  endDate.setDate(endDate.getDate() + dayNeed);
+
+  // BMR
+  let BMR;
+  if(g==='male') BMR = 10*currW + 6.25*h -5*age +5;
+  else BMR = 10*currW + 6.25*h -5*age -161;
+  const TDEE = BMR * 1.35;
+  const deficitPerDay = losePerWeek * 7700 / 7;
+  const targetCal = TDEE - deficitPerDay;
+
+  const pro = 2.0 * currW;
+  const fat = 0.8 * currW;
+  const proK = pro *4;
+  const fatK = fat *9;
+  let carbK = targetCal - proK - fatK;
+  let carb = carbK /4;
+  if(carb < 80) carb = 80;
+  const carbTrain = carb + 25;
+
+  const bmi = currW / ((h/100)*(h/100));
+  let diet, train;
+  if(bmi >=28){ diet = dietSet.big; train = trainSet.big; }
+  else if(bmi >=24){ diet = dietSet.mid; train = trainSet.mid; }
+  else { diet = dietSet.slim; train = trainSet.slim; }
+
+  let dayText = diet.title + "\n";
+  diet.days.forEach(d=> dayText += d+"\n");
+
+  const out = `🎯减重目标测算结果
+当前体重：${currW} kg｜目标体重：${targetW} kg
+总共需要减重：${loseTotal.toFixed(1)} kg
+每周减重速度：${losePerWeek} kg
+预估需要：${weekNeed.toFixed(1)} 周 ≈ ${dayNeed} 天
+预计达成日期：${endDate.getFullYear()}-${endDate.getMonth()+1}-${endDate.getDate()}
+
+📊热量 & 三大营养素目标
+每日消耗TDEE：${TDEE.toFixed(0)} kcal
+每日热量缺口：${deficitPerDay.toFixed(0)} kcal
+目标摄入热量：${targetCal.toFixed(0)} kcal
+
+休息日：蛋白质(Pro) ${pro.toFixed(1)}g｜碳水化合物(CHO) ${carb.toFixed(1)}g｜脂肪(Fat) ${fat.toFixed(1)}g
+训练日：蛋白质(Pro) ${pro.toFixed(1)}g｜碳水化合物(CHO) ${carbTrain.toFixed(1)}g｜脂肪(Fat) ${fat.toFixed(1)}g
+
+🍽配套7天食谱
+${dayText}
+
+${train}
+
+💡备注
+1. 预估时间为理论计算，实际会受睡眠、盐分、经期、执行度影响
+2. 同类食物可以互换，优先保证蛋白质(Pro)达标
+3. 每周称重1~3次，看7天平均，不要纠结单日波动`;
+
+  document.getElementById('goalResult').innerText = out;
+  window.goalMacro = {pro, cho:carb, fat};
+}
+function applyGoalMacro(){
+  if(!window.goalMacro){
+    alert("请先计算目标方案！");
+    return;
+  }
+  appData.macroTarget.pro = window.goalMacro.pro;
+  appData.macroTarget.cho = window.goalMacro.cho;
+  appData.macroTarget.fat = window.goalMacro.fat;
+  saveData();
+  alert("✅已将这套营养素目标设置为打卡目标");
+  renderMacroInput();
+}
+
 function calcAutoPlan(){
   const gender = document.getElementById('genAuto').value;
   const h = Number(document.getElementById('heightAuto').value);
@@ -345,8 +465,8 @@ BMR：${BMR.toFixed(0)} kcal
 减脂目标摄入：${targetCal.toFixed(0)} kcal
 
 🎯宏量营养素目标
-休息日：蛋白${pro.toFixed(1)}g｜碳水${carb.toFixed(1)}g｜脂肪${fat.toFixed(1)}g
-训练日：蛋白${pro.toFixed(1)}g｜碳水${carbTrain.toFixed(1)}g｜脂肪${fat.toFixed(1)}g
+休息日：蛋白质(Pro)${pro.toFixed(1)}g｜碳水化合物(CHO)${carb.toFixed(1)}g｜脂肪(Fat)${fat.toFixed(1)}g
+训练日：蛋白质(Pro)${pro.toFixed(1)}g｜碳水化合物(CHO)${carbTrain.toFixed(1)}g｜脂肪(Fat)${fat.toFixed(1)}g
 
 🍽${dayText}
 
@@ -356,7 +476,8 @@ ${train}
 1.7天循环轮换，一轮结束重新从Day1开始
 2.烹饪少油，蔬菜不限量（淀粉类蔬菜算主食）
 3.每日饮水2000~2500ml，禁止含糖饮料
-4.食物可以同类互换（米饭↔红薯↔玉米，鸡胸↔牛腱↔巴沙鱼）`;
+4.食物可以同类互换（米饭↔红薯↔玉米，鸡胸↔牛腱↔巴沙鱼）
+热量换算：蛋白质4kcal/g，碳水4kcal/g，脂肪9kcal/g`;
   document.getElementById('planResult').innerText = resultText;
   window.generatedMacro = {pro,cho:carb,fat};
 }
@@ -411,7 +532,7 @@ function searchFoodLib(){
   let name = document.getElementById('searchFood').value.trim();
   let find = appData.foodLib.find(x=>x.name.includes(name)) || appData.customFood.find(x=>x.name.includes(name));
   if(!find){document.getElementById('foodSearchResult').innerText="未找到";return;}
-  document.getElementById('foodSearchResult').innerText = `${find.name}(每100g) 热量:${find.kcal}kcal 蛋白${find.pro}g 碳水${find.cho}g 脂肪${find.fat}g`;
+  document.getElementById('foodSearchResult').innerText = `${find.name}(每100g) 热量:${find.kcal}kcal 蛋白质(Pro)${find.pro}g 碳水化合物(CHO)${find.cho}g 脂肪(Fat)${find.fat}g`;
 }
 function addCustomFood(){
   let obj={
@@ -447,7 +568,7 @@ function renderTodayFood(){
   let html="";
   let sumK=0,sumP=0,sumC=0,sumF=0;
   todayFood.forEach((it,i)=>{
-    html +=`<div>${it.name} ${it.g}g | ${it.kcal.toFixed(0)}kcal 蛋白${it.pro.toFixed(1)} 碳水${it.cho.toFixed(1)} 脂肪${it.fat.toFixed(1)}
+    html +=`<div>${it.name} ${it.g}g | ${it.kcal.toFixed(0)}kcal 蛋白质(Pro)${it.pro.toFixed(1)} 碳水(CHO)${it.cho.toFixed(1)} 脂肪(Fat)${it.fat.toFixed(1)}
     <button class="del" onclick="todayFood.splice(${i},1);renderTodayFood();">删除</button></div>`;
     sumK+=it.kcal;sumP+=it.pro;sumC+=it.cho;sumF+=it.fat;
   })
@@ -456,9 +577,9 @@ function renderTodayFood(){
   let tCho = appData.macroTarget.cho + (document.getElementById("isTrainDay").checked ? 25 :0);
   let tFat = appData.macroTarget.fat;
   document.getElementById('macroSummary').innerHTML = `
-  <div>✅已摄入：热量${sumK.toFixed(0)}kcal｜蛋白${sumP.toFixed(1)}g｜碳水${sumC.toFixed(1)}g｜脂肪${sumF.toFixed(1)}g</div>
-  <div>🎯目标：蛋白${tPro.toFixed(1)}g｜碳水${tCho.toFixed(1)}g｜脂肪${tFat.toFixed(1)}g</div>
-  <div>📊差值：蛋白${(sumP-tPro).toFixed(1)}g｜碳水${(sumC-tCho).toFixed(1)}g｜脂肪${(sumF-tFat).toFixed(1)}g</div>
+  <div>✅已摄入：热量${sumK.toFixed(0)}kcal｜蛋白质(Pro)${sumP.toFixed(1)}g｜碳水化合物(CHO)${sumC.toFixed(1)}g｜脂肪(Fat)${sumF.toFixed(1)}g</div>
+  <div>🎯目标：蛋白质(Pro)${tPro.toFixed(1)}g｜碳水化合物(CHO)${tCho.toFixed(1)}g｜脂肪(Fat)${tFat.toFixed(1)}g</div>
+  <div>📊差值：蛋白质(Pro)${(sumP-tPro).toFixed(1)}g｜碳水化合物(CHO)${(sumC-tCho).toFixed(1)}g｜脂肪(Fat)${(sumF-tFat).toFixed(1)}g</div>
   `;
 }
 
